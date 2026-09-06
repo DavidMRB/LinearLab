@@ -136,3 +136,73 @@ python calculadora.py
 ```
 
 El modelo supone que todas las variables son no negativas (`x_i >= 0`).
+
+## API con FastAPI
+
+La API esta separada del programa de terminal. Reutiliza el mismo motor
+matematico de `simplex.py` y `dualidad.py`, pero recibe los problemas como JSON.
+
+### Instalacion y ejecucion
+
+Instale las dependencias:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Inicie el servidor desde la carpeta principal del proyecto:
+
+```powershell
+python -m uvicorn api.main:app --reload
+```
+
+La API quedara disponible en `http://127.0.0.1:8000`. FastAPI genera una
+interfaz para probar los endpoints en `http://127.0.0.1:8000/docs`.
+
+### Endpoint de Simplex
+
+```text
+POST /api/simplex/resolver
+```
+
+Ejemplo de datos para el problema de prueba:
+
+```json
+{
+	"tipo": "max",
+	"objetivo": [3, 5],
+	"restricciones": [
+		{
+			"coeficientes": [1, 2],
+			"relacion": "<=",
+			"termino_independiente": 8
+		},
+		{
+			"coeficientes": [3, 2],
+			"relacion": "<=",
+			"termino_independiente": 12
+		}
+	]
+}
+```
+
+La respuesta incluye el estado, el valor optimo, los valores de las variables y
+las tablas de todas las iteraciones.
+
+### Endpoint de dualidad
+
+```text
+POST /api/dualidad/resolver
+```
+
+Recibe el mismo JSON del problema primal. La respuesta contiene el primal, el
+dual construido, sus resultados y un indicador `valores_coinciden` para comparar
+los valores optimos cuando ambos problemas tienen solucion.
+
+### Salud del servicio
+
+```text
+GET /api/salud
+```
+
+Sirve para verificar rapidamente que el servidor esta funcionando.

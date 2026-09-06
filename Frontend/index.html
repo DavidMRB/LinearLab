@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinearLab | Programación Lineal</title>
+  <link rel="icon" type="image/svg+xml" href="image.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          screens: {
+            short: { raw: "(max-height: 850px)" }
+          },
+          colors: {
+            ink: "#36494E",
+            steel: "#7EA0B7",
+            ice: "#A9CEF4",
+            mist: "#E8EEF2"
+          },
+          fontFamily: {
+            sans: ["Manrope", "sans-serif"],
+            mono: ["DM Mono", "monospace"]
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <main class="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_10%_10%,rgba(169,206,244,.65),transparent_25%),linear-gradient(135deg,#F7FAFC,#E7EEF3)] font-sans text-ink">
+
+    <!-- VISTA INICIAL -->
+    <section id="welcomeScreen" class="relative flex min-h-screen flex-col bg-[linear-gradient(90deg,rgba(169,206,244,.18)_1px,transparent_1px),linear-gradient(rgba(169,206,244,.12)_1px,transparent_1px),#F6F8FA] bg-[length:42px_42px] px-6 py-8 sm:px-12 lg:px-28">
+      <div class="flex items-center gap-3 text-[17px] font-extrabold tracking-wide">
+        <div class="grid size-10 place-items-center overflow-hidden rounded-xl bg-ink shadow-lg">
+          <img src="image.svg" alt="LinearLab" class="size-full object-contain p-1.5">
+        </div>
+        <span>LINEAR<span class="text-steel">LAB</span></span>
+      </div>
+
+      <div class="mx-auto my-auto w-full max-w-5xl py-16">
+        <p class="mb-4 text-[11px] font-extrabold tracking-[2px] text-steel">CALCULADORA DE PROGRAMACIÓN LINEAL</p>
+        <h1 class="max-w-3xl text-5xl font-extrabold leading-tight tracking-tight sm:text-7xl">Selecciona un<br><span class="text-steel">método de resolución</span></h1>
+        <p class="my-7 max-w-2xl text-base leading-8 text-[#597081] sm:text-lg">
+          Elige el método que deseas utilizar para resolver tu problema de
+          programación lineal.
+        </p>
+
+        <div class="grid gap-5 md:grid-cols-2">
+          <button class="method-card group flex min-h-60 flex-wrap content-between gap-5 rounded-3xl border border-ink/10 bg-white/75 p-7 text-left shadow-sm transition hover:-translate-y-1.5 hover:border-steel hover:shadow-2xl" data-method="simplex">
+            <div class="grid size-[72px] place-items-center rounded-3xl bg-ice text-3xl font-bold text-ink">
+              <span>Σ</span>
+            </div>
+            <div class="basis-[calc(100%-100px)] pt-1">
+              <h2 class="mb-2 text-xl font-bold">Método Simplex</h2>
+              <p class="text-sm leading-6 text-[#597081]">Optimización paso a paso mediante tablas simplex.</p>
+            </div>
+            <div class="ml-auto text-3xl text-steel transition group-hover:translate-x-1.5">→</div>
+          </button>
+
+          <button class="method-card group flex min-h-60 flex-wrap content-between gap-5 rounded-3xl border border-ink/10 bg-white/75 p-7 text-left shadow-sm transition hover:-translate-y-1.5 hover:border-steel hover:shadow-2xl" data-method="dualidad">
+            <div class="grid size-[72px] place-items-center rounded-3xl bg-ink text-3xl font-bold text-white">
+              <span>⇄</span>
+            </div>
+            <div class="basis-[calc(100%-100px)] pt-1">
+              <h2 class="mb-2 text-xl font-bold">Método de Dualidad</h2>
+              <p class="text-sm leading-6 text-[#597081]">Resolución mediante la relación entre problema primal y dual.</p>
+            </div>
+            <div class="ml-auto text-3xl text-steel transition group-hover:translate-x-1.5">→</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="absolute bottom-0 left-0 h-2 w-full bg-[linear-gradient(90deg,#A9CEF4_0_20%,#36494E_20%_40%,#000_40%_60%,#7EA0B7_60%_80%,#597081_80%)]"></div>
+    </section>
+
+    <!-- CALCULADORA -->
+    <section id="calculatorScreen" class="hidden min-h-screen px-4 py-5 sm:px-10 lg:px-16">
+      <header class="mx-auto flex min-h-16 max-w-[1500px] flex-wrap items-center justify-between gap-5 short:min-h-12 short:gap-3">
+        <div class="flex items-center gap-3 text-[17px] font-extrabold tracking-wide">
+          <div class="grid size-10 place-items-center overflow-hidden rounded-xl bg-ink shadow-lg">
+            <img src="image.svg" alt="LinearLab" class="size-full object-contain p-1.5">
+          </div>
+          <span>LINEAR<span class="text-steel">LAB</span></span>
+        </div>
+
+        <div class="ml-auto flex items-center gap-2 short:gap-1">
+          <div class="relative">
+          <button id="currentMethod" class="flex items-center gap-2 rounded-2xl border border-ink/10 bg-white px-4 py-2.5 font-bold shadow-lg shadow-ink/5 short:px-3 short:py-2">
+            <span id="currentMethodIcon" class="grid size-7 place-items-center rounded-lg bg-ice text-ink">Σ</span>
+            <span id="currentMethodText">Método</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5 text-steel" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+
+          <!-- MENÚ ESTILO GOOGLE WORKSPACE -->
+          <div id="methodMenu" class="pointer-events-none absolute left-1/2 top-[calc(100%+12px)] z-10 w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-2 scale-95 rounded-3xl border border-ink/10 bg-white/95 p-3 opacity-0 shadow-2xl transition [&.show]:pointer-events-auto [&.show]:translate-y-0 [&.show]:scale-100 [&.show]:opacity-100">
+            <div class="px-2 pb-3 pt-2 text-[11px] font-extrabold tracking-widest text-steel">MÉTODOS DISPONIBLES</div>
+            <button class="workspace-option flex w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-mist" data-method="simplex">
+              <div class="grid size-10 place-items-center rounded-xl bg-ice font-extrabold">Σ</div>
+              <div><strong class="block text-[13px]">Método Simplex</strong><small class="mt-1 block text-[11px] text-[#597081]">Optimización por tablas</small></div>
+              <span class="option-check ml-auto text-steel opacity-0">✓</span>
+            </button>
+            <button class="workspace-option flex w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-mist" data-method="dualidad">
+              <div class="grid size-10 place-items-center rounded-xl bg-ink font-extrabold text-white">⇄</div>
+              <div><strong class="block text-[13px]">Método de Dualidad</strong><small class="mt-1 block text-[11px] text-[#597081]">Problema primal y dual</small></div>
+              <span class="option-check ml-auto text-steel opacity-0">✓</span>
+            </button>
+          </div>
+        </div>
+
+          <button id="resetBtn" class="rounded-xl px-4 py-2.5 font-bold text-[#597081] transition hover:bg-[#597081]/10 short:px-2" title="Nuevo ejercicio">↺ <span class="hidden sm:inline">Nuevo ejercicio</span></button>
+        </div>
+      </header>
+
+      <div id="workArea" class="mx-auto mt-5 flex min-h-0 w-full max-w-[1500px] min-w-0 flex-col items-stretch justify-start gap-5 overflow-visible pb-10 transition-[gap,justify-content,align-items] duration-700 ease-[cubic-bezier(.22,.8,.25,1)] sm:gap-7 lg:h-[calc(100svh-9rem)] lg:flex-row lg:items-center lg:justify-center lg:overflow-visible lg:[&.show-results]:items-start lg:[&.show-results]:justify-start short:mt-2 short:pb-4">
+        <!-- PANEL DE RESULTADOS -->
+        <section id="solutionPanel" class="hidden w-full min-w-0 max-w-4xl opacity-0 transition lg:w-0 lg:translate-x-16 lg:overflow-hidden lg:[.show-results_&]:block lg:[.show-results_&]:w-[calc(100%-440px)] lg:[.show-results_&]:translate-x-0 lg:[.show-results_&]:opacity-100">
+          <div class="flex items-center justify-between rounded-t-3xl border border-ink/10 bg-white/80 p-7">
+            <div>
+              <p class="mb-4 text-[11px] font-extrabold tracking-[2px] text-steel">PROCESO DE RESOLUCIÓN</p>
+              <h2 id="solutionTitle" class="text-2xl font-bold">Resolviendo el problema</h2>
+            </div>
+            <div class="rounded-full bg-[#EEF6F2] px-3 py-2 text-[11px] font-bold text-[#50856E]"><span class="mr-1 inline-block size-2 rounded-full bg-[#70B092]"></span> Completado</div>
+          </div>
+
+          <div class="max-h-[calc(100vh-230px)] overflow-y-auto rounded-b-3xl border border-t-0 border-ink/10 bg-white/80 p-4 sm:p-7">
+            <div class="mb-6 border-b border-ink/10 pb-6">
+              <h3 class="mb-4 text-[13px] font-bold">1. Función objetivo</h3>
+              <div id="objectivePreview" class="rounded-xl bg-ink p-4 font-mono text-white">MAX Z = 3x₁ + 5x₂</div>
+            </div>
+
+            <div class="mb-6 border-b border-ink/10 pb-6">
+              <h3 class="mb-4 text-[13px] font-bold">2. Restricciones ingresadas</h3>
+              <div id="constraintsPreview" class="grid gap-2 font-mono text-xs"></div>
+            </div>
+
+            <div class="mb-6 border-b border-ink/10 pb-6">
+              <h3 class="mb-4 text-[13px] font-bold">3. Desarrollo del método</h3>
+              <div id="stepsOutput" class="grid gap-3"></div>
+            </div>
+
+            <div class="rounded-2xl bg-ice p-6">
+              <span class="block text-[10px] font-extrabold tracking-widest">RESULTADO</span>
+              <strong id="finalAnswer" class="my-2 block text-3xl">Z = 0</strong>
+              <p id="finalDescription" class="text-xs text-[#597081]">Resultado del modelo enviado al backend.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- CALCULADORA -->
+        <section id="calculator" class="w-full min-w-0 max-w-[470px] self-center overflow-visible rounded-[31px] border border-ink/10 bg-white/90 p-4 shadow-2xl transition-[max-width,transform] duration-700 ease-[cubic-bezier(.22,.8,.25,1)] sm:p-6 lg:self-auto lg:[.show-results_&]:max-w-[420px] short:p-3 short:lg:max-h-none short:lg:overflow-visible">
+          <div class="flex items-center justify-between px-1 pb-5 short:pb-3">
+            <div>
+              <p class="mb-1 text-[10px] font-extrabold tracking-widest text-steel">ENTRADA DEL PROBLEMA</p>
+              <h2 id="calcTitle" class="text-lg font-bold">Método Simplex</h2>
+            </div>
+            <div class="size-3 rounded-full bg-[#7EB7A4] shadow-[0_0_0_5px_rgba(126,183,164,.13)]"></div>
+          </div>
+
+          <div class="grid grid-cols-[1fr_1fr_.7fr] gap-2 py-3 short:gap-1 short:py-2">
+            <button class="mode rounded-xl bg-ice py-3 text-xs font-extrabold text-ink" data-mode="max">MAX</button>
+            <button class="mode rounded-xl bg-mist py-3 text-xs font-extrabold text-[#597081]" data-mode="min">MIN</button>
+            <button class="clear-entry rounded-xl bg-[#F8EEEE] py-3 text-xs font-extrabold text-[#9A4E4E]" id="clearEntry">AC</button>
+          </div>
+
+          <div class="grid gap-2 short:gap-1">
+            <label class="text-[11px] font-extrabold text-[#597081]" for="variableCount">Cantidad de variables</label>
+            <input id="variableCount" class="w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm outline-none focus:border-steel focus:ring-4 focus:ring-steel/15 short:py-1.5" type="number" min="1" max="20" value="2">
+            <label class="mt-2 text-[11px] font-extrabold text-[#597081] short:mt-1" for="objectiveCoefficients">Coeficientes de Z</label>
+            <input id="objectiveCoefficients" class="w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm outline-none focus:border-steel focus:ring-4 focus:ring-steel/15 short:py-1.5" type="text" value="3,5" placeholder="Ejemplo: 3,5">
+            <p class="-mt-1 mb-1 text-[11px] text-[#597081] short:mb-0">Escríbelos en orden: x1, x2, x3...</p>
+            <label class="text-[11px] font-extrabold text-[#597081]" for="constraintCount">Cantidad de restricciones</label>
+            <input id="constraintCount" class="w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm outline-none focus:border-steel focus:ring-4 focus:ring-steel/15 short:py-1.5" type="number" min="1" max="20" value="2">
+          </div>
+
+          <div id="constraintEditor" class="mt-5 grid max-h-80 gap-2 overflow-y-auto pr-1 short:mt-3 short:max-h-none short:gap-1 short:overflow-visible"></div>
+
+          <div class="mt-3 grid grid-cols-2 gap-2">
+            <button id="addConstraint" class="rounded-xl bg-ice py-3 text-xs font-extrabold text-ink" type="button">Actualizar campos</button>
+            <button id="solveBtn" class="rounded-xl bg-ink py-3 text-xs font-extrabold text-white transition hover:bg-[#26383c] disabled:cursor-wait disabled:opacity-60" type="button">Resolver <span>→</span></button>
+          </div>
+          <p id="formError" class="min-h-5 mt-3 text-xs leading-5 text-[#9A4E4E]" role="alert"></p>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 translate-y-24 rounded-xl bg-ink px-5 py-3 text-sm text-white opacity-0 shadow-2xl transition [&.show]:translate-y-0 [&.show]:opacity-100">Campos actualizados</div>
+
+  <script src="script.js"></script>
+</body>
+</html>

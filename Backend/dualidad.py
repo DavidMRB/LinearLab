@@ -1,5 +1,5 @@
-from modelos import ProblemaLineal, Restriccion
-from simplex import resolver_simplex
+from Backend.modelos import ProblemaLineal, Restriccion
+from Backend.simplex import resolver_simplex
 
 
 def construir_dual(problema: ProblemaLineal) -> ProblemaLineal:

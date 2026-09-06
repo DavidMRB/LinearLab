@@ -1,4 +1,4 @@
-from modelos import ProblemaLineal, ResultadoSimplex
+from Backend.modelos import ProblemaLineal, ResultadoSimplex
 
 
 def numero(valor: float) -> str:

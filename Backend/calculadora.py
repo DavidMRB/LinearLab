@@ -1,8 +1,8 @@
-from dualidad import construir_dual, resolver_con_dualidad
-from expresiones import evaluar_lista, evaluar_numero
-from modelos import ProblemaLineal, Restriccion
-from presentacion import mostrar_problema, mostrar_resultado, mostrar_tabla
-from simplex import resolver_simplex
+from Backend.dualidad import construir_dual, resolver_con_dualidad
+from Backend.expresiones import evaluar_lista, evaluar_numero
+from Backend.modelos import ProblemaLineal, Restriccion
+from Backend.presentacion import mostrar_problema, mostrar_resultado, mostrar_tabla
+from Backend.simplex import resolver_simplex
 
 
 def pedir_texto_no_vacio(mensaje: str) -> str:

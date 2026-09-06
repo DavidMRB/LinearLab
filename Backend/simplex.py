@@ -3,7 +3,7 @@ from typing import Sequence
 
 import numpy as np
 
-from modelos import PasoSimplex, ProblemaLineal, ResultadoSimplex, Restriccion
+from Backend.modelos import PasoSimplex, ProblemaLineal, ResultadoSimplex, Restriccion
 
 
 class ProblemaNoAcotado(Exception):
