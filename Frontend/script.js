@@ -79,8 +79,12 @@ document.addEventListener("click", event => {
 document.querySelectorAll(".mode").forEach(button => {
   button.addEventListener("click", () => {
     mode = button.dataset.mode;
-    document.querySelectorAll(".mode").forEach(item => item.classList.remove("active"));
-    button.classList.add("active");
+    document.querySelectorAll(".mode").forEach(item => {
+      item.classList.remove("active", "bg-ice", "text-ink");
+      item.classList.add("bg-mist", "text-[#597081]");
+    });
+    button.classList.remove("bg-mist", "text-[#597081]");
+    button.classList.add("active", "bg-ice", "text-ink");
   });
 });
 
@@ -235,6 +239,13 @@ async function setResultsVisible(visible) {
 }
 
 clearEntry.addEventListener("click", () => {
+  mode = "max";
+  document.querySelectorAll(".mode").forEach(item => {
+    item.classList.remove("active", "bg-ice", "text-ink");
+    item.classList.add("bg-mist", "text-[#597081]");
+  });
+  document.querySelector('.mode[data-mode="max"]').classList.remove("bg-mist", "text-[#597081]");
+  document.querySelector('.mode[data-mode="max"]').classList.add("active", "bg-ice", "text-ink");
   objectiveCoefficients.value = "";
   variableCount.value = "2";
   constraintCount.value = "2";

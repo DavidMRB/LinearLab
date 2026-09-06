@@ -11,7 +11,11 @@ from Backend.api.esquemas import DualidadSalida, ProblemaEntrada, ResultadoSalid
 
 load_dotenv()
 
-frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
+frontend_origins = [
+    origin.strip().rstrip("/")
+    for origin in os.getenv("FRONTEND_URL", "http://127.0.0.1:5500").split(",")
+    if origin.strip()
+]
 
 
 app = FastAPI(
@@ -22,7 +26,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_url, "http://localhost:5500", "http://127.0.0.1:5500"],
+    allow_origins=list(dict.fromkeys(frontend_origins + ["http://localhost:5500", "http://127.0.0.1:5500"])),
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
