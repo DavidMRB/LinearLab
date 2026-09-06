@@ -1,10 +1,17 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
 from Backend.dualidad import construir_dual, resolver_con_dualidad
 from Backend.modelos import ProblemaLineal, Restriccion
 from Backend.simplex import resolver_simplex
 from Backend.api.esquemas import DualidadSalida, ProblemaEntrada, ResultadoSalida
+
+load_dotenv()
+
+frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
 
 
 app = FastAPI(
@@ -15,7 +22,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5500", "http://127.0.0.1:5500"],
+    allow_origins=[frontend_url, "http://localhost:5500", "http://127.0.0.1:5500"],
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
