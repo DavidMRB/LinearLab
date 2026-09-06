@@ -156,25 +156,39 @@ function formatModel(model) {
   }).join("");
 }
 
+function renderSteps(result, title) {
+  const values = result.valores_variables.map((value, index) => `x${index + 1} = ${formatNumber(value)}`).join(", ");
+  return `
+    <div class="mb-3 rounded-xl bg-mist px-4 py-3">
+      <strong class="block text-base">${title}</strong>
+      <span class="text-xs text-[#597081]">${result.mensaje}</span>
+      ${values ? `<span class="mt-1 block font-mono text-xs">${values}</span>` : ""}
+    </div>
+    ${result.pasos.map(step => `
+      <div class="mb-3 rounded-xl border-l-4 border-steel bg-[#F6F9FA] p-4 text-sm leading-6">
+        <strong class="block">${step.fase} · Iteración ${step.iteracion}</strong>
+        <span class="mt-1 block text-[#597081]">${step.entra ? `Entra ${step.entra}` : "Tabla inicial"}${step.sale ? ` · Sale ${step.sale}` : ""}</span>
+        <div class="mt-3 overflow-x-auto"><table class="w-full border-collapse font-mono text-[11px]"><thead><tr>${step.encabezados.map(header => `<th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">${header}</th>`).join("")}</tr></thead><tbody>${step.tabla.map(row => `<tr>${row.map(cell => `<td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${formatNumber(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+      </div>
+    `).join("")}
+  `;
+}
+
 function renderSimplexResult(result) {
   const values = result.valores_variables.map((value, index) => `x${index + 1} = ${formatNumber(value)}`).join(", ");
   finalAnswer.textContent = result.valor_objetivo === null ? result.estado : `Z = ${formatNumber(result.valor_objetivo)}`;
   finalDescription.textContent = `${result.mensaje} ${values}`;
-  stepsOutput.innerHTML = result.pasos.map(step => `
-    <div class="rounded-xl border-l-4 border-steel bg-[#F6F9FA] p-4 text-sm leading-6">
-      <strong class="block">${step.fase} · Iteración ${step.iteracion}</strong>
-      <span class="mt-1 block text-[#597081]">${step.entra ? `Entra ${step.entra}` : "Tabla inicial"}${step.sale ? ` · Sale ${step.sale}` : ""}</span>
-      <div class="mt-3 overflow-x-auto"><table class="w-full border-collapse font-mono text-[11px]"><thead><tr>${step.encabezados.map(header => `<th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">${header}</th>`).join("")}</tr></thead><tbody>${step.tabla.map(row => `<tr>${row.map(cell => `<td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${formatNumber(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
-    </div>
-  `).join("");
+  stepsOutput.innerHTML = renderSteps(result, "Simplex");
 }
 
 function renderDualResult(result) {
   const primal = result.primal;
   const dual = result.dual;
-  finalAnswer.textContent = `Primal: ${formatNumber(primal.valor_objetivo)} · Dual: ${formatNumber(dual.valor_objetivo)}`;
+  const primalValue = primal.valor_objetivo === null ? primal.estado : formatNumber(primal.valor_objetivo);
+  const dualValue = dual.valor_objetivo === null ? dual.estado : formatNumber(dual.valor_objetivo);
+  finalAnswer.textContent = `Primal: ${primalValue} · Dual: ${dualValue}`;
   finalDescription.textContent = result.valores_coinciden ? "Los valores óptimos coinciden." : "Revisa la factibilidad o la formulación de ambos problemas.";
-  stepsOutput.innerHTML = `<div class="step"><strong>Primal</strong><span>${primal.mensaje}</span></div><div class="step"><strong>Dual construido</strong><span>${dual.mensaje}</span></div>`;
+  stepsOutput.innerHTML = renderSteps(primal, "Primal") + renderSteps(dual, "Dual construido");
 }
 
 async function solve() {
