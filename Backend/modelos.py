@@ -15,6 +15,7 @@ class ProblemaLineal:
     tipo: str
     restricciones: List[Restriccion]
     nombres_variables: List[str]
+    signos_variables: List[str] | None = None
 
 
 @dataclass
