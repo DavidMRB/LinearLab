@@ -103,8 +103,8 @@ def resolver_simplex(problema: ProblemaLineal) -> ResultadoSimplex:
         c_original *= -1
 
     def ejecutar_fase(tabla, costos, fase, iteracion=0):
+        _guardar_paso(pasos, fase, iteracion, tabla, base, nombres)
         while True:
-            _guardar_paso(pasos, fase, iteracion, tabla, base, nombres)
             reducidos = tabla[-1, :-1]
             candidatos = np.where(reducidos > 1e-9)[0]
             if not len(candidatos):

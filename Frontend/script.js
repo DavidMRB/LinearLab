@@ -157,11 +157,11 @@ function formatModel(model) {
 }
 
 function renderSteps(result, title) {
-  const values = result.valores_variables.map((value, index) => `x${index + 1} = ${formatNumber(value)}`).join(", ");
+  const values = result.valores_variables.map((value, index) => `${result.nombres_variables[index] || `x${index + 1}`} = ${formatNumber(value)}`).join(", ");
   return `
     <div class="mb-3 rounded-xl bg-mist px-4 py-3">
       <strong class="block text-base">${title}</strong>
-      <span class="text-xs text-[#597081]">${result.mensaje}</span>
+      <span class="mt-1 block text-xs text-[#597081]">${result.mensaje}</span>
       ${values ? `<span class="mt-1 block font-mono text-xs">${values}</span>` : ""}
     </div>
     ${result.pasos.map(step => `
@@ -175,7 +175,7 @@ function renderSteps(result, title) {
 }
 
 function renderSimplexResult(result) {
-  const values = result.valores_variables.map((value, index) => `x${index + 1} = ${formatNumber(value)}`).join(", ");
+  const values = result.valores_variables.map((value, index) => `${result.nombres_variables[index] || `x${index + 1}`} = ${formatNumber(value)}`).join(", ");
   finalAnswer.textContent = result.valor_objetivo === null ? result.estado : `Z = ${formatNumber(result.valor_objetivo)}`;
   finalDescription.textContent = `${result.mensaje} ${values}`;
   stepsOutput.innerHTML = renderSteps(result, "Simplex");
