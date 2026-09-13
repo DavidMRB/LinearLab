@@ -32,6 +32,7 @@ let mode = "max";
 
 const methodData = {
   simplex: { name: "Método Simplex", icon: "Σ", title: "Resolución mediante el Método Simplex" },
+  simplexRevisado: { name: "Simplex Revisado", icon: "B⁻¹", title: "Resolución mediante Simplex Revisado" },
   dualidad: { name: "Método de Dualidad", icon: "⇄", title: "Resolución mediante Dualidad" }
 };
 
@@ -198,11 +199,16 @@ async function solve() {
   try {
     const model = collectModel();
     formatModel(model);
-    const endpoint = selectedMethod === "simplex" ? "/api/simplex/resolver" : "/api/dualidad/resolver";
+    const endpoint = selectedMethod === "simplex" ? "/api/simplex/resolver" : selectedMethod === "simplexRevisado" ? "/api/simplex-revisado/resolver" : "/api/dualidad/resolver";
     const response = await fetch(`${API_URL}${endpoint}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(model) });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail?.[0]?.msg || "La API rechazó el modelo.");
-    selectedMethod === "simplex" ? renderSimplexResult(data) : renderDualResult(data);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (response.status === 404 && selectedMethod === "simplexRevisado") {
+        throw new Error("El backend desplegado aún no tiene disponible el método Simplex Revisado.");
+      }
+      throw new Error(data.detail?.[0]?.msg || `La API rechazó el modelo (${response.status}).`);
+    }
+    selectedMethod === "dualidad" ? renderDualResult(data) : renderSimplexResult(data);
     await setResultsVisible(true);
   } catch (error) {
     formError.textContent = error.message || "No se pudo resolver el modelo.";

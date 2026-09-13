@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from Backend.dualidad import construir_dual, resolver_con_dualidad
 from Backend.modelos import ProblemaLineal, Restriccion
 from Backend.simplex import resolver_simplex
+from Backend.simplex_revisado import resolver_simplex_revisado
 from Backend.api.esquemas import DualidadSalida, ProblemaEntrada, ResultadoSalida
 
 load_dotenv()
@@ -96,6 +97,13 @@ def salud():
 def resolver_simplex_api(entrada: ProblemaEntrada):
     problema = convertir_problema(entrada)
     resultado = resolver_simplex(problema)
+    return convertir_resultado(resultado, problema.nombres_variables)
+
+
+@app.post("/api/simplex-revisado/resolver", response_model=ResultadoSalida)
+def resolver_simplex_revisado_api(entrada: ProblemaEntrada):
+    problema = convertir_problema(entrada)
+    resultado = resolver_simplex_revisado(problema)
     return convertir_resultado(resultado, problema.nombres_variables)
 
 

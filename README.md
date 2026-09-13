@@ -3,6 +3,7 @@
 Calculadora de terminal para resolver problemas de programacion lineal con:
 
 - Metodo simplex de dos fases.
+- Metodo simplex revisado con matriz de la base.
 - Restricciones `<=`, `>=` y `=`.
 - Problemas de maximizacion y minimizacion.
 - Construccion y resolucion del problema dual.
@@ -33,7 +34,8 @@ Al iniciar el programa, seleccione el metodo:
 ```text
 Seleccione el metodo:
 1. Metodo simplex
-2. Metodo de dualidad
+2. Metodo de simplex revisado
+3. Metodo de dualidad
 Opcion: 1
 ```
 
@@ -188,6 +190,15 @@ Ejemplo de datos para el problema de prueba:
 
 La respuesta incluye el estado, el valor optimo, los valores de las variables y
 las tablas de todas las iteraciones.
+
+### Endpoint de Simplex revisado
+
+```text
+POST /api/simplex-revisado/resolver
+```
+
+Recibe el mismo JSON del endpoint de Simplex. La respuesta incluye los pasos
+del algoritmo usando la base y sus costos reducidos.
 
 ### Endpoint de dualidad
 
