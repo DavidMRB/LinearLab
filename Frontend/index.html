@@ -73,6 +73,15 @@
             </div>
             <div class="ml-auto text-3xl text-steel transition group-hover:translate-x-1.5">→</div>
           </button>
+
+          <button class="method-card group flex min-h-60 flex-wrap content-between gap-5 rounded-3xl border border-ink/10 bg-white/75 p-7 text-left shadow-sm transition hover:-translate-y-1.5 hover:border-steel hover:shadow-2xl" data-method="simplexRevisado">
+            <div class="grid size-[72px] place-items-center rounded-3xl bg-steel text-xl font-bold text-white"><span>B⁻¹</span></div>
+            <div class="basis-[calc(100%-100px)] pt-1">
+              <h2 class="mb-2 text-xl font-bold">Simplex Revisado</h2>
+              <p class="text-sm leading-6 text-[#597081]">Optimización usando la matriz de la base y sus costos reducidos.</p>
+            </div>
+            <div class="ml-auto text-3xl text-steel transition group-hover:translate-x-1.5">→</div>
+          </button>
         </div>
       </div>
 
@@ -110,6 +119,11 @@
             <button class="workspace-option flex w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-mist" data-method="dualidad">
               <div class="grid size-10 place-items-center rounded-xl bg-ink font-extrabold text-white">⇄</div>
               <div><strong class="block text-[13px]">Método de Dualidad</strong><small class="mt-1 block text-[11px] text-[#597081]">Problema primal y dual</small></div>
+              <span class="option-check ml-auto text-steel opacity-0">✓</span>
+            </button>
+            <button class="workspace-option flex w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-mist" data-method="simplexRevisado">
+              <div class="grid size-10 place-items-center rounded-xl bg-steel text-sm font-extrabold text-white">B⁻¹</div>
+              <div><strong class="block text-[13px]">Simplex Revisado</strong><small class="mt-1 block text-[11px] text-[#597081]">Matriz de la base</small></div>
               <span class="option-check ml-auto text-steel opacity-0">✓</span>
             </button>
           </div>
