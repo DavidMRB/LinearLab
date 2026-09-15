@@ -68,7 +68,10 @@ def _resolver_fase(A, b, costos, base, nombres, fase, pasos, iteracion=0):
             _guardar_paso(pasos, fase, iteracion, A, b, costos, base, nombres)
             return x_basicas, iteracion
 
-        entra_indice = candidatos[0]
+        # En el simplex revisado, la variable entrante debe ser la de mayor costo
+        # reducido positivo para maximizar (o el de menor costo reducido negativo
+        # para minimizar, con la convención de signos del problema).
+        entra_indice = max(candidatos, key=lambda indice: costos_reducidos[indice])
         direccion = base_matrix @ A[:, entra_indice]
         razones = [
             x_basicas[fila] / direccion[fila]
