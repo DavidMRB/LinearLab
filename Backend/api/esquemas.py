@@ -45,6 +45,13 @@ class PasoSalida(BaseModel):
     entra: str
     sale: str
     razon: str
+    # Exclusivos del simplex revisado (None en el simplex por tablas y en dualidad).
+    base_inversa: list[list[float]] | None = None
+    cb: list[float] | None = None
+    y: list[float] | None = None
+    xb: list[float] | None = None
+    costos_reducidos: list[float] | None = None
+    columna_pivote: list[float] | None = None
 
 
 class ResultadoSalida(BaseModel):

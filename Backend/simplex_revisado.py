@@ -16,18 +16,43 @@ class BaseInvalidaRevisado(Exception):
     pass
 
 
-def _guardar_paso(pasos, fase, iteracion, A, b, costos, base, nombres, entra="", sale="", razon=""):
+def _guardar_paso(pasos, fase, iteracion, A, b, costos, base, nombres, entra="", sale="", razon="", entra_indice=None):
     try:
         base_matrix = np.linalg.solve(A[:, base], np.eye(len(base)))
     except np.linalg.LinAlgError as error:
         raise BaseInvalidaRevisado() from error
+    costos_base = costos[base]
+    y = costos_base @ base_matrix
+    x_basicas = base_matrix @ b
+    costos_reducidos = costos - y @ A
+
+    # La tabla completa se conserva solo como equivalencia con el metodo por
+    # tablas (para comparar resultados); el metodo revisado en si nunca la
+    # arma: opera con B^-1, y = c_B B^-1 y, a lo sumo, la columna entrante.
     tabla = np.zeros((A.shape[0] + 1, A.shape[1] + 1))
     tabla[:-1, :-1] = base_matrix @ A
-    tabla[:-1, -1] = base_matrix @ b
-    costos_base = costos[base]
-    tabla[-1, :-1] = costos - costos_base @ base_matrix @ A
-    tabla[-1, -1] = -costos_base @ base_matrix @ b
-    pasos.append(PasoSimplex(fase, iteracion, nombres + ["LD"], tabla.tolist(), [nombres[i] for i in base], entra, sale, razon))
+    tabla[:-1, -1] = x_basicas
+    tabla[-1, :-1] = costos_reducidos
+    tabla[-1, -1] = -costos_base @ x_basicas
+
+    columna_pivote = (base_matrix @ A[:, entra_indice]).tolist() if entra_indice is not None else None
+
+    pasos.append(PasoSimplex(
+        fase,
+        iteracion,
+        nombres + ["LD"],
+        tabla.tolist(),
+        [nombres[i] for i in base],
+        entra,
+        sale,
+        razon,
+        base_inversa=base_matrix.tolist(),
+        cb=costos_base.tolist(),
+        y=y.tolist(),
+        xb=x_basicas.tolist(),
+        costos_reducidos=costos_reducidos.tolist(),
+        columna_pivote=columna_pivote,
+    ))
 
 
 def _resolver_fase(A, b, costos, base, nombres, fase, pasos, iteracion=0):
@@ -69,6 +94,7 @@ def _resolver_fase(A, b, costos, base, nombres, fase, pasos, iteracion=0):
             nombres[entra_indice],
             nombres[sale_indice],
             "Pivote con B^-1 y prueba de razon minima",
+            entra_indice=entra_indice,
         )
         base[fila_salida] = entra_indice
         iteracion += 1
@@ -94,7 +120,7 @@ def _quitar_artificiales(A, b, base, nombres, artificiales, pasos, costos):
         if candidatos:
             sale = base[fila]
             entra = candidatos[0]
-            _guardar_paso(pasos, "Fase I", len(pasos), A, b, costos, base, nombres, nombres[entra], nombres[sale], "Se expulsa una artificial de la base")
+            _guardar_paso(pasos, "Fase I", len(pasos), A, b, costos, base, nombres, nombres[entra], nombres[sale], "Se expulsa una artificial de la base", entra_indice=entra)
             base[fila] = entra
         elif abs((base_matrix @ b)[fila]) <= TOLERANCIA:
             A = np.delete(A, fila, axis=0)
