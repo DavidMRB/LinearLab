@@ -65,6 +65,12 @@ def convertir_resultado(resultado, nombres_variables: list[str]) -> ResultadoSal
                 "entra": paso.entra,
                 "sale": paso.sale,
                 "razon": paso.razon,
+                "base_inversa": paso.base_inversa,
+                "cb": paso.cb,
+                "y": paso.y,
+                "xb": paso.xb,
+                "costos_reducidos": paso.costos_reducidos,
+                "columna_pivote": paso.columna_pivote,
             }
             for paso in resultado.pasos
         ],

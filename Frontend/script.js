@@ -157,6 +157,24 @@ function formatModel(model) {
   }).join("");
 }
 
+function sectionLabel(text) {
+  return `<span class="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[#597081]">${text}</span>`;
+}
+
+function renderTablaCompleta(step) {
+  return `<div class="overflow-x-auto"><table class="w-full border-collapse font-mono text-[11px]"><thead><tr>${step.encabezados.map(header => `<th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">${header}</th>`).join("")}</tr></thead><tbody>${step.tabla.map(row => `<tr>${row.map(cell => `<td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${formatNumber(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+
+function renderVectorRow(labels, values, opts = {}) {
+  const { highlightIndex = -1 } = opts;
+  return `<table class="w-full border-collapse font-mono text-[11px]"><thead><tr>${labels.map(label => `<th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">${label}</th>`).join("")}</tr></thead><tbody><tr>${values.map((value, index) => `<td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right${index === highlightIndex ? " bg-ice/60 font-semibold" : ""}">${formatNumber(value)}</td>`).join("")}</tr></tbody></table>`;
+}
+
+function renderMatrizB(rowLabels, matriz) {
+  const colHeaders = matriz[0].map((_, index) => `F${index + 1}`);
+  return `<table class="w-full border-collapse font-mono text-[11px]"><thead><tr><th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white"></th>${colHeaders.map(header => `<th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">${header}</th>`).join("")}</tr></thead><tbody>${matriz.map((row, indice) => `<tr><th class="whitespace-nowrap border border-ink/10 bg-mist px-2 py-1.5 text-right text-ink">${rowLabels[indice]}</th>${row.map(value => `<td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${formatNumber(value)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+
 function renderSteps(result, title) {
   const values = result.valores_variables.map((value, index) => `${result.nombres_variables[index] || `x${index + 1}`} = ${formatNumber(value)}`).join(", ");
   return `
@@ -169,9 +187,100 @@ function renderSteps(result, title) {
       <div class="mb-3 rounded-xl border-l-4 border-steel bg-[#F6F9FA] p-4 text-sm leading-6">
         <strong class="block">${step.fase} · Iteración ${step.iteracion}</strong>
         <span class="mt-1 block text-[#597081]">${step.entra ? `Entra ${step.entra}` : "Tabla inicial"}${step.sale ? ` · Sale ${step.sale}` : ""}</span>
-        <div class="mt-3 overflow-x-auto"><table class="w-full border-collapse font-mono text-[11px]"><thead><tr>${step.encabezados.map(header => `<th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">${header}</th>`).join("")}</tr></thead><tbody>${step.tabla.map(row => `<tr>${row.map(cell => `<td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${formatNumber(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+        <div class="mt-3">${renderTablaCompleta(step)}</div>
       </div>
     `).join("")}
+  `;
+}
+
+// Vista propia del método simplex revisado: en vez de repetir la tabla completa
+// (que es lo que distingue al método clásico), expone las operaciones que
+// realmente se hacen a cada iteración: B⁻¹, y = c_B·B⁻¹, x_B = B⁻¹·b, los
+// costos reducidos usados para elegir la variable entrante y la columna
+// B⁻¹·A(entra) con la prueba de razón mínima para elegir la que sale.
+function renderStepsRevisado(result, title) {
+  const values = result.valores_variables.map((value, index) => `${result.nombres_variables[index] || `x${index + 1}`} = ${formatNumber(value)}`).join(", ");
+  return `
+    <div class="mb-3 rounded-xl bg-mist px-4 py-3">
+      <strong class="block text-base">${title}</strong>
+      <span class="mt-1 block text-xs text-[#597081]">${result.mensaje}</span>
+      ${values ? `<span class="mt-1 block font-mono text-xs">${values}</span>` : ""}
+    </div>
+    ${result.pasos.map(step => {
+      if (!Array.isArray(step.base_inversa)) {
+        // Respaldo por si el backend desplegado aún no envía los campos del método revisado.
+        return `
+          <div class="mb-3 rounded-xl border-l-4 border-steel bg-[#F6F9FA] p-4 text-sm leading-6">
+            <strong class="block">${step.fase} · Iteración ${step.iteracion}</strong>
+            <span class="mt-1 block text-[#597081]">${step.entra ? `Entra ${step.entra}` : "Tabla inicial"}${step.sale ? ` · Sale ${step.sale}` : ""}</span>
+            <div class="mt-3">${renderTablaCompleta(step)}</div>
+          </div>
+        `;
+      }
+      const variables = step.encabezados.slice(0, -1);
+      const entraIndice = step.entra ? variables.indexOf(step.entra) : -1;
+      const filaSaleIndice = step.sale ? step.base.indexOf(step.sale) : -1;
+      return `
+        <div class="mb-3 rounded-xl border-l-4 border-steel bg-[#F6F9FA] p-4 text-sm leading-6">
+          <strong class="block">${step.fase} · Iteración ${step.iteracion}</strong>
+          <span class="mt-1 block text-[#597081]">${step.entra ? `Entra ${step.entra}` : "Base óptima"}${step.sale ? ` · Sale ${step.sale}` : ""}${step.razon ? ` · ${step.razon}` : ""}</span>
+
+          <div class="mt-3">
+            ${sectionLabel("Base actual")}
+            <span class="font-mono text-xs">{ ${step.base.join(", ")} }</span>
+          </div>
+
+          <div class="mt-3 grid gap-3 md:grid-cols-2">
+            <div>
+              ${sectionLabel("c_B (costos de las variables básicas)")}
+              ${renderVectorRow(step.base, step.cb)}
+            </div>
+            <div>
+              ${sectionLabel("x_B = B⁻¹ · b (valor de las básicas)")}
+              ${renderVectorRow(step.base, step.xb)}
+            </div>
+          </div>
+
+          <div class="mt-3">
+            ${sectionLabel("B⁻¹ (inversa de la matriz base)")}
+            ${renderMatrizB(step.base, step.base_inversa)}
+          </div>
+
+          <div class="mt-3">
+            ${sectionLabel("y = c_B · B⁻¹")}
+            ${renderVectorRow(step.base.map((_, indice) => `F${indice + 1}`), step.y)}
+          </div>
+
+          <div class="mt-3">
+            ${sectionLabel("Costos reducidos c_j − y·A_j (se elige el mayor positivo)")}
+            ${renderVectorRow(variables, step.costos_reducidos, { highlightIndex: entraIndice })}
+          </div>
+
+          ${step.columna_pivote ? `
+          <div class="mt-3">
+            ${sectionLabel(`Columna entrante B⁻¹·A(${step.entra}) y prueba de razón mínima`)}
+            <table class="w-full border-collapse font-mono text-[11px]"><thead><tr>
+              <th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">Básica</th>
+              <th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">x_B</th>
+              <th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">B⁻¹·A(${step.entra})</th>
+              <th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">Razón</th>
+            </tr></thead><tbody>
+              ${step.base.map((nombre, fila) => {
+                const direccion = step.columna_pivote[fila];
+                const razon = direccion > 1e-9 ? formatNumber(step.xb[fila] / direccion) : "—";
+                const esSalida = fila === filaSaleIndice;
+                return `<tr class="${esSalida ? "bg-ice/60 font-semibold" : ""}"><td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${nombre}</td><td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${formatNumber(step.xb[fila])}</td><td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${formatNumber(direccion)}</td><td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${razon}</td></tr>`;
+              }).join("")}
+            </tbody></table>
+          </div>` : ""}
+
+          <details class="mt-3">
+            <summary class="cursor-pointer text-xs font-semibold text-[#597081]">Ver tabla equivalente (comparar con el método clásico)</summary>
+            <div class="mt-2">${renderTablaCompleta(step)}</div>
+          </details>
+        </div>
+      `;
+    }).join("")}
   `;
 }
 
@@ -179,7 +288,10 @@ function renderSimplexResult(result) {
   const values = result.valores_variables.map((value, index) => `${result.nombres_variables[index] || `x${index + 1}`} = ${formatNumber(value)}`).join(", ");
   finalAnswer.textContent = result.valor_objetivo === null ? result.estado : `Z = ${formatNumber(result.valor_objetivo)}`;
   finalDescription.textContent = `${result.mensaje} ${values}`;
-  stepsOutput.innerHTML = renderSteps(result, "Simplex");
+  const nombreMetodo = methodData[selectedMethod]?.name ?? "Simplex";
+  stepsOutput.innerHTML = selectedMethod === "simplexRevisado"
+    ? renderStepsRevisado(result, nombreMetodo)
+    : renderSteps(result, nombreMetodo);
 }
 
 function renderDualResult(result) {
