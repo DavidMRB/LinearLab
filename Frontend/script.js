@@ -374,9 +374,19 @@ function renderGraphicResult(result, model) {
       <text x="${padding.left - 8}" y="${padding.top - 5}" class="graph-label">x2</text>
     </svg>
   `;
-  stepsOutput.innerHTML = points.length
-    ? `<div class="rounded-xl bg-mist px-4 py-3 text-sm text-[#597081]">${points.map((point, index) => `<div class="font-mono">${index + 1}. (${formatNumber(point.x)}, ${formatNumber(point.y)}) → Z = ${formatNumber(point.valor_objetivo)}</div>`).join("")}</div>`
-    : `<div class="rounded-xl bg-[#F8EEEE] px-4 py-3 text-sm text-[#9A4E4E]">${result.mensaje}</div>`;
+  const detailedSteps = (result.pasos || []).map(step => `
+    <article class="rounded-xl border border-ink/10 bg-[#F6F9FA] p-4">
+      <h4 class="mb-2 text-sm font-bold text-ink">${step.titulo}</h4>
+      <div class="whitespace-pre-line font-mono text-xs leading-6 text-[#597081]">${step.detalle}</div>
+    </article>
+  `).join("");
+  const verticesStep = points.length
+    ? `<article class="rounded-xl border border-ink/10 bg-mist p-4">
+        <h4 class="mb-2 text-sm font-bold text-ink">Vértices factibles encontrados</h4>
+        ${points.map((point, index) => `<div class="font-mono text-xs leading-6">${index + 1}. (${formatNumber(point.x)}, ${formatNumber(point.y)}) → Z = ${formatNumber(point.valor_objetivo)}</div>`).join("")}
+      </article>`
+    : `<article class="rounded-xl bg-[#F8EEEE] px-4 py-3 text-sm text-[#9A4E4E]">${result.mensaje}</article>`;
+  stepsOutput.innerHTML = detailedSteps + verticesStep;
   finalAnswer.textContent = result.valor_objetivo === null ? result.estado : `Z = ${formatNumber(result.valor_objetivo)}`;
   finalDescription.textContent = `${result.mensaje} x1 = ${formatNumber(result.valores_variables[0] ?? 0)}, x2 = ${formatNumber(result.valores_variables[1] ?? 0)}`;
 }

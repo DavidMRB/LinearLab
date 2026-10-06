@@ -152,5 +152,9 @@ def resolver_grafico_api(entrada: ProblemaEntrada):
             }
             for vertice in resultado.vertices
         ],
+        pasos=[
+            {"titulo": paso.titulo, "detalle": paso.detalle}
+            for paso in resultado.pasos
+        ],
         mensaje=resultado.mensaje,
     )

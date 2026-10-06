@@ -76,9 +76,15 @@ class VerticeGraficoSalida(BaseModel):
     valor_objetivo: float
 
 
+class PasoGraficoSalida(BaseModel):
+    titulo: str
+    detalle: str
+
+
 class GraficoSalida(BaseModel):
     estado: str
     valor_objetivo: float | None
     valores_variables: list[float]
     vertices: list[VerticeGraficoSalida]
+    pasos: list[PasoGraficoSalida]
     mensaje: str
