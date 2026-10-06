@@ -189,6 +189,23 @@ ejecutandose ambos servidores:
 | Backend | Carpeta principal | `python -m uvicorn Backend.api.main:app --reload` | `http://127.0.0.1:8000` |
 | Frontend | `Frontend` | `python -m http.server 5500` | `http://127.0.0.1:5500` |
 
+### Estructura modular del frontend
+
+El archivo `Frontend/index.html` funciona como un shell mínimo y carga el
+módulo principal `script.js`. La interfaz compartida se construye desde
+`Frontend/components/layout.js`, mientras que cada método mantiene su
+configuración en un módulo independiente dentro de `Frontend/modules/`:
+
+- `simplex.js`
+- `simplexRevisado.js`
+- `dualidad.js`
+- `grafico.js`
+- `transporte.js`
+
+Los componentes compartidos, como el selector de métodos, la entrada y el
+panel de resultados, se reutilizan desde `components/` sin duplicarlos en
+cada método.
+
 ### Endpoint de Simplex
 
 ```text
@@ -249,6 +266,44 @@ variables. La respuesta incluye los vértices de la región factible, el valor
 de la función objetivo en cada vértice y la solución óptima. La interfaz web
 representa estos datos en una gráfica junto con las rectas de las
 restricciones.
+
+### Problema del transporte
+
+La aplicación también permite resolver la primera fase del problema del
+transporte mediante tres métodos de solución inicial:
+
+- Esquina noroeste.
+- Costo mínimo.
+- Aproximación de Vogel.
+
+El módulo recibe una matriz de costos, la oferta de cada origen y la demanda de
+cada destino. Si la oferta total y la demanda total no coinciden, agrega
+automáticamente un origen o destino ficticio con costo cero para balancear el
+modelo.
+
+El endpoint es:
+
+```text
+POST /api/transporte/resolver
+```
+
+Ejemplo de datos:
+
+```json
+{
+  "costos": [
+    [2, 5, 7, 3],
+    [3, 6, 4, 2],
+    [5, 4, 3, 6]
+  ],
+  "oferta": [20, 30, 25],
+  "demanda": [10, 25, 20, 20]
+}
+```
+
+La interfaz muestra las asignaciones, el costo total y el desarrollo paso a
+paso de cada método. La optimización y verificación mediante MODI (u-v) se
+agregará en una siguiente fase.
 
 ### Salud del servicio
 

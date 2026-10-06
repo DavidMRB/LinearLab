@@ -1,3 +1,8 @@
+import { renderLayout } from "./components/layout.js";
+import { endpointFor, methodData } from "./modules/methods.js";
+
+renderLayout();
+
 const API_URL = window.APP_CONFIG?.API_URL || "http://127.0.0.1:8000";
 
 const welcomeScreen = document.getElementById("welcomeScreen");
@@ -29,16 +34,16 @@ const finalAnswer = document.getElementById("finalAnswer");
 const finalDescription = document.getElementById("finalDescription");
 const formError = document.getElementById("formError");
 const toast = document.getElementById("toast");
+const standardEditor = document.getElementById("standardEditor");
+const transportEditor = document.getElementById("transportEditor");
+const transportMatrix = document.getElementById("transportMatrix");
+const originCount = document.getElementById("originCount");
+const destinationCount = document.getElementById("destinationCount");
+const objectiveMode = document.getElementById("objectiveMode");
+const brandHomeButtons = document.querySelectorAll(".brand-home");
 
 let selectedMethod = "simplex";
 let mode = "max";
-
-const methodData = {
-  simplex: { name: "Método Simplex", icon: "Σ", title: "Resolución mediante el Método Simplex" },
-  simplexRevisado: { name: "Simplex Revisado", icon: "B⁻¹", title: "Resolución mediante Simplex Revisado" },
-  dualidad: { name: "Método de Dualidad", icon: "⇄", title: "Resolución mediante Dualidad" },
-  grafico: { name: "Método Gráfico", icon: "↗", title: "Resolución mediante el Método Gráfico" }
-};
 
 function selectMethod(method, firstView = false) {
   selectedMethod = method;
@@ -47,6 +52,14 @@ function selectMethod(method, firstView = false) {
   currentMethodIcon.textContent = data.icon;
   calcTitle.textContent = data.name;
   solutionTitle.textContent = data.title;
+  const esTransporte = method === "transporte";
+  calculator.classList.toggle("transport-mode", esTransporte);
+  standardEditor.classList.toggle("hidden", esTransporte);
+  constraintEditor.classList.toggle("hidden", esTransporte);
+  transportEditor.classList.toggle("hidden", !esTransporte);
+  objectiveMode.classList.toggle("hidden", esTransporte);
+  addConstraint.classList.toggle("hidden", esTransporte);
+  if (esTransporte) renderTransportMatrix();
   document.querySelectorAll(".workspace-option").forEach(option => {
     option.classList.toggle("active", option.dataset.method === method);
   });
@@ -60,6 +73,15 @@ function selectMethod(method, firstView = false) {
 
 document.querySelectorAll(".method-card").forEach(card => {
   card.addEventListener("click", () => selectMethod(card.dataset.method, true));
+});
+
+brandHomeButtons.forEach(button => {
+  button.addEventListener("click", async () => {
+    await resetCalculator(true);
+    calculatorScreen.classList.add("hidden");
+    welcomeScreen.classList.remove("hidden");
+    methodMenu.classList.remove("show");
+  });
 });
 
 document.querySelectorAll(".workspace-option").forEach(option => {
@@ -114,12 +136,31 @@ function renderConstraintEditor() {
   `).join("");
 }
 
+function renderTransportMatrix() {
+  const origins = Number.parseInt(originCount.value, 10);
+  const destinations = Number.parseInt(destinationCount.value, 10);
+  if (!Number.isInteger(origins) || origins < 1 || origins > 10 || !Number.isInteger(destinations) || destinations < 1 || destinations > 10) return;
+  const transportWidth = Math.min(1180, Math.max(620, 210 + destinations * 78));
+  calculator.style.setProperty("--transport-width", `${transportWidth}px`);
+  transportMatrix.innerHTML = `
+    <table class="w-full border-collapse text-xs">
+      <thead><tr><th class="p-2 text-left">Costo</th>${Array.from({ length: destinations }, (_, j) => `<th class="p-2">D${j + 1}</th>`).join("")}<th class="p-2">Oferta</th></tr></thead>
+      <tbody>${Array.from({ length: origins }, (_, i) => `
+        <tr><th class="p-1 text-left">O${i + 1}</th>${Array.from({ length: destinations }, (_, j) => `<td class="p-1"><input class="transport-cost w-16 rounded-lg border border-ink/10 bg-white px-2 py-2 text-center" type="number" min="0" step="any" value="${i === j ? 2 : 5}" data-origin="${i}" data-destination="${j}" aria-label="Costo O${i + 1} D${j + 1}"></td>`).join("")}<td class="p-1"><input class="transport-supply w-20 rounded-lg border border-ink/10 bg-white px-2 py-2 text-center" type="number" min="0" step="any" value="20" data-origin="${i}" aria-label="Oferta O${i + 1}"></td></tr>
+      `).join("")}</tbody>
+      <tfoot><tr><th class="p-2 text-left">Demanda</th>${Array.from({ length: destinations }, (_, j) => `<td class="p-1"><input class="transport-demand w-20 rounded-lg border border-ink/10 bg-white px-2 py-2 text-center" type="number" min="0" step="any" value="15" data-destination="${j}" aria-label="Demanda D${j + 1}"></td>`).join("")}<td></td></tr></tfoot>
+    </table>
+  `;
+}
+
 variableCount.addEventListener("change", renderConstraintEditor);
 constraintCount.addEventListener("change", renderConstraintEditor);
 addConstraint.addEventListener("click", () => {
   renderConstraintEditor();
   showToast("Campos de restricciones actualizados");
 });
+originCount.addEventListener("change", renderTransportMatrix);
+destinationCount.addEventListener("change", renderTransportMatrix);
 
 function parseNumbers(value, expected, label) {
   const parts = value.split(",").map(item => item.trim());
@@ -149,6 +190,18 @@ function collectModel() {
   return { tipo: mode, objetivo: objective, restricciones };
 }
 
+function collectTransportModel() {
+  const origins = Number.parseInt(originCount.value, 10);
+  const destinations = Number.parseInt(destinationCount.value, 10);
+  const costos = Array.from({ length: origins }, (_, i) => Array.from({ length: destinations }, (_, j) => {
+    const input = transportMatrix.querySelector(`[data-origin="${i}"][data-destination="${j}"]`);
+    return parseTerm(input.value, `El costo O${i + 1}-D${j + 1}`);
+  }));
+  const oferta = Array.from({ length: origins }, (_, i) => parseTerm(transportMatrix.querySelector(`.transport-supply[data-origin="${i}"]`).value, `La oferta O${i + 1}`));
+  const demanda = Array.from({ length: destinations }, (_, j) => parseTerm(transportMatrix.querySelector(`.transport-demand[data-destination="${j}"]`).value, `La demanda D${j + 1}`));
+  return { costos, oferta, demanda };
+}
+
 function formatNumber(value) {
   return Number(value).toFixed(4).replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
 }
@@ -159,6 +212,33 @@ function formatModel(model) {
     const left = restriction.coeficientes.map((value, variable) => `${formatNumber(value)}x${variable + 1}`).join(" + ");
     return `<div class="constraint-result">R${index + 1}: ${left} ${restriction.relacion} ${formatNumber(restriction.termino_independiente)}</div>`;
   }).join("");
+}
+
+function formatTransportModel(model) {
+  objectivePreview.textContent = `Problema de transporte · ${model.oferta.length} orígenes · ${model.demanda.length} destinos`;
+  constraintsPreview.innerHTML = `<div class="constraint-result">Oferta: [${model.oferta.map(formatNumber).join(", ")}]</div><div class="constraint-result">Demanda: [${model.demanda.map(formatNumber).join(", ")}]</div>`;
+}
+
+function renderAllocationTable(solution, result) {
+  const body = solution.asignaciones.map((row, i) => `<tr><th class="border border-ink/10 px-2 py-1.5 text-left">O${i + 1}</th>${row.map(value => `<td class="border border-ink/10 px-2 py-1.5 text-right">${formatNumber(value)}</td>`).join("")}</tr>`).join("");
+  return `<div class="mb-3 overflow-x-auto"><table class="w-full border-collapse font-mono text-[11px]"><thead><tr><th class="border border-ink/10 bg-ink px-2 py-1.5 text-left text-white">Asignación</th>${solution.asignaciones[0].map((_, j) => `<th class="border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">D${j + 1}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div><p class="font-bold">Costo total: ${formatNumber(solution.costo_total)}</p>`;
+}
+
+function renderTransportResult(result) {
+  graphicSection.classList.add("hidden");
+  stepsTitle.textContent = "3. Desarrollo de los métodos de transporte";
+  objectivePreview.textContent = "Problema de transporte balanceado";
+  constraintsPreview.innerHTML = `<div class="constraint-result">${result.mensaje}</div>`;
+  stepsOutput.innerHTML = result.soluciones.map(solution => `
+    <article class="rounded-xl border border-ink/10 bg-[#F6F9FA] p-4">
+      <h4 class="mb-2 text-base font-bold">${solution.nombre} · Costo ${formatNumber(solution.costo_total)}</h4>
+      ${solution.pasos.map(step => `<div class="mb-2 rounded-lg bg-white p-3"><strong class="block text-xs">${step.titulo}</strong><span class="whitespace-pre-line text-xs leading-5 text-[#597081]">${step.detalle}</span></div>`).join("")}
+      ${renderAllocationTable(solution, result)}
+    </article>
+  `).join("");
+  const mejor = result.soluciones.reduce((actual, solution) => solution.costo_total < actual.costo_total ? solution : actual);
+  finalAnswer.textContent = `Mejor costo: ${formatNumber(mejor.costo_total)}`;
+  finalDescription.textContent = `La solución con menor costo inicial es la obtenida por ${mejor.nombre}. Posteriormente se podrá verificar y optimizar con MODI.`;
 }
 
 function sectionLabel(text) {
@@ -408,12 +488,12 @@ async function solve() {
   solveBtn.disabled = true;
   solveBtn.textContent = "Resolviendo...";
   try {
-    const model = collectModel();
-    formatModel(model);
+    const model = selectedMethod === "transporte" ? collectTransportModel() : collectModel();
+    selectedMethod === "transporte" ? formatTransportModel(model) : formatModel(model);
     if (selectedMethod === "grafico" && model.objetivo.length !== 2) {
       throw new Error("El método gráfico requiere exactamente dos variables.");
     }
-    const endpoint = selectedMethod === "simplex" ? "/api/simplex/resolver" : selectedMethod === "simplexRevisado" ? "/api/simplex-revisado/resolver" : selectedMethod === "grafico" ? "/api/grafico/resolver" : "/api/dualidad/resolver";
+    const endpoint = endpointFor(selectedMethod);
     const response = await fetch(`${API_URL}${endpoint}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(model) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -424,6 +504,7 @@ async function solve() {
     }
     if (selectedMethod === "dualidad") renderDualResult(data);
     else if (selectedMethod === "grafico") renderGraphicResult(data, model);
+    else if (selectedMethod === "transporte") renderTransportResult(data);
     else renderSimplexResult(data);
     await setResultsVisible(true);
   } catch (error) {
@@ -485,6 +566,9 @@ clearEntry.addEventListener("click", () => {
   objectiveCoefficients.value = "";
   variableCount.value = "2";
   constraintCount.value = "2";
+  originCount.value = "3";
+  destinationCount.value = "4";
+  renderTransportMatrix();
   renderConstraintEditor();
   setResultsVisible(false);
   formError.textContent = "";
@@ -497,6 +581,7 @@ async function resetCalculator(clearEverything = true) {
 
 resetBtn.addEventListener("click", () => resetCalculator(true));
 renderConstraintEditor();
+renderTransportMatrix();
 
 function showToast(message) {
   toast.textContent = message;
