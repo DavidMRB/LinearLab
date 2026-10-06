@@ -1,14 +1,23 @@
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from Backend.dualidad import construir_dual, resolver_con_dualidad
+from Backend.grafico import resolver_grafico
+from Backend.transporte import resolver_transporte
 from Backend.modelos import ProblemaLineal, Restriccion
 from Backend.simplex import resolver_simplex
 from Backend.simplex_revisado import resolver_simplex_revisado
-from Backend.api.esquemas import DualidadSalida, ProblemaEntrada, ResultadoSalida
+from Backend.api.esquemas import (
+    DualidadSalida,
+    GraficoSalida,
+    ProblemaEntrada,
+    ResultadoSalida,
+    TransporteEntrada,
+    TransporteSalida,
+)
 
 load_dotenv()
 
@@ -127,4 +136,56 @@ def resolver_dualidad_api(entrada: ProblemaEntrada):
         dual=convertir_resultado(resultado_dual, dual.nombres_variables),
         modelo_dual=convertir_entrada(dual),
         valores_coinciden=coinciden,
+    )
+
+
+@app.post("/api/grafico/resolver", response_model=GraficoSalida)
+def resolver_grafico_api(entrada: ProblemaEntrada):
+    if len(entrada.objetivo) != 2:
+        raise HTTPException(
+            status_code=422,
+            detail="El método gráfico requiere exactamente dos variables.",
+        )
+    problema = convertir_problema(entrada)
+    resultado = resolver_grafico(problema)
+    return GraficoSalida(
+        estado=resultado.estado,
+        valor_objetivo=resultado.valor_objetivo,
+        valores_variables=resultado.valores_variables,
+        vertices=[
+            {
+                "x": vertice.x,
+                "y": vertice.y,
+                "valor_objetivo": vertice.valor_objetivo,
+            }
+            for vertice in resultado.vertices
+        ],
+        pasos=[
+            {"titulo": paso.titulo, "detalle": paso.detalle}
+            for paso in resultado.pasos
+        ],
+        mensaje=resultado.mensaje,
+    )
+
+
+@app.post("/api/transporte/resolver", response_model=TransporteSalida)
+def resolver_transporte_api(entrada: TransporteEntrada):
+    resultado = resolver_transporte(entrada.costos, entrada.oferta, entrada.demanda)
+    return TransporteSalida(
+        oferta=resultado.oferta,
+        demanda=resultado.demanda,
+        costos=resultado.costos,
+        soluciones=[
+            {
+                "nombre": solucion.nombre,
+                "asignaciones": solucion.asignaciones,
+                "costo_total": solucion.costo_total,
+                "pasos": [
+                    {"titulo": paso.titulo, "detalle": paso.detalle}
+                    for paso in solucion.pasos
+                ],
+            }
+            for solucion in resultado.soluciones
+        ],
+        mensaje=resultado.mensaje,
     )

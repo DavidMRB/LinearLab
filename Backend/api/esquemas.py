@@ -68,3 +68,57 @@ class DualidadSalida(BaseModel):
     dual: ResultadoSalida
     modelo_dual: ProblemaEntrada
     valores_coinciden: bool | None
+
+
+class VerticeGraficoSalida(BaseModel):
+    x: float
+    y: float
+    valor_objetivo: float
+
+
+class PasoGraficoSalida(BaseModel):
+    titulo: str
+    detalle: str
+
+
+class GraficoSalida(BaseModel):
+    estado: str
+    valor_objetivo: float | None
+    valores_variables: list[float]
+    vertices: list[VerticeGraficoSalida]
+    pasos: list[PasoGraficoSalida]
+    mensaje: str
+
+
+class TransporteEntrada(BaseModel):
+    costos: list[list[float]] = Field(min_length=1, max_length=20)
+    oferta: list[float] = Field(min_length=1, max_length=20)
+    demanda: list[float] = Field(min_length=1, max_length=20)
+
+    @model_validator(mode="after")
+    def validar_dimensiones(self):
+        if len(self.costos) != len(self.oferta):
+            raise ValueError("Debe existir una oferta por cada origen.")
+        if any(len(fila) != len(self.demanda) for fila in self.costos):
+            raise ValueError("La matriz debe tener una columna por cada destino.")
+        return self
+
+
+class PasoTransporteSalida(BaseModel):
+    titulo: str
+    detalle: str
+
+
+class SolucionTransporteSalida(BaseModel):
+    nombre: str
+    asignaciones: list[list[float]]
+    costo_total: float
+    pasos: list[PasoTransporteSalida]
+
+
+class TransporteSalida(BaseModel):
+    oferta: list[float]
+    demanda: list[float]
+    costos: list[list[float]]
+    soluciones: list[SolucionTransporteSalida]
+    mensaje: str

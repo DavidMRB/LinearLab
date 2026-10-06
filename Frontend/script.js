@@ -1,3 +1,8 @@
+import { renderLayout } from "./components/layout.js";
+import { endpointFor, methodData } from "./modules/methods.js";
+
+renderLayout();
+
 const API_URL = window.APP_CONFIG?.API_URL || "http://127.0.0.1:8000";
 
 const welcomeScreen = document.getElementById("welcomeScreen");
@@ -22,19 +27,23 @@ const constraintCount = document.getElementById("constraintCount");
 const constraintsPreview = document.getElementById("constraintsPreview");
 const objectivePreview = document.getElementById("objectivePreview");
 const stepsOutput = document.getElementById("stepsOutput");
+const stepsTitle = document.getElementById("stepsTitle");
+const graphicSection = document.getElementById("graphicSection");
+const graphicOutput = document.getElementById("graphicOutput");
 const finalAnswer = document.getElementById("finalAnswer");
 const finalDescription = document.getElementById("finalDescription");
 const formError = document.getElementById("formError");
 const toast = document.getElementById("toast");
+const standardEditor = document.getElementById("standardEditor");
+const transportEditor = document.getElementById("transportEditor");
+const transportMatrix = document.getElementById("transportMatrix");
+const originCount = document.getElementById("originCount");
+const destinationCount = document.getElementById("destinationCount");
+const objectiveMode = document.getElementById("objectiveMode");
+const brandHomeButtons = document.querySelectorAll(".brand-home");
 
 let selectedMethod = "simplex";
 let mode = "max";
-
-const methodData = {
-  simplex: { name: "Método Simplex", icon: "Σ", title: "Resolución mediante el Método Simplex" },
-  simplexRevisado: { name: "Simplex Revisado", icon: "B⁻¹", title: "Resolución mediante Simplex Revisado" },
-  dualidad: { name: "Método de Dualidad", icon: "⇄", title: "Resolución mediante Dualidad" }
-};
 
 function selectMethod(method, firstView = false) {
   selectedMethod = method;
@@ -43,6 +52,14 @@ function selectMethod(method, firstView = false) {
   currentMethodIcon.textContent = data.icon;
   calcTitle.textContent = data.name;
   solutionTitle.textContent = data.title;
+  const esTransporte = method === "transporte";
+  calculator.classList.toggle("transport-mode", esTransporte);
+  standardEditor.classList.toggle("hidden", esTransporte);
+  constraintEditor.classList.toggle("hidden", esTransporte);
+  transportEditor.classList.toggle("hidden", !esTransporte);
+  objectiveMode.classList.toggle("hidden", esTransporte);
+  addConstraint.classList.toggle("hidden", esTransporte);
+  if (esTransporte) renderTransportMatrix();
   document.querySelectorAll(".workspace-option").forEach(option => {
     option.classList.toggle("active", option.dataset.method === method);
   });
@@ -56,6 +73,15 @@ function selectMethod(method, firstView = false) {
 
 document.querySelectorAll(".method-card").forEach(card => {
   card.addEventListener("click", () => selectMethod(card.dataset.method, true));
+});
+
+brandHomeButtons.forEach(button => {
+  button.addEventListener("click", async () => {
+    await resetCalculator(true);
+    calculatorScreen.classList.add("hidden");
+    welcomeScreen.classList.remove("hidden");
+    methodMenu.classList.remove("show");
+  });
 });
 
 document.querySelectorAll(".workspace-option").forEach(option => {
@@ -110,12 +136,31 @@ function renderConstraintEditor() {
   `).join("");
 }
 
+function renderTransportMatrix() {
+  const origins = Number.parseInt(originCount.value, 10);
+  const destinations = Number.parseInt(destinationCount.value, 10);
+  if (!Number.isInteger(origins) || origins < 1 || origins > 10 || !Number.isInteger(destinations) || destinations < 1 || destinations > 10) return;
+  const transportWidth = Math.min(1180, Math.max(620, 210 + destinations * 78));
+  calculator.style.setProperty("--transport-width", `${transportWidth}px`);
+  transportMatrix.innerHTML = `
+    <table class="w-full border-collapse text-xs">
+      <thead><tr><th class="p-2 text-left">Costo</th>${Array.from({ length: destinations }, (_, j) => `<th class="p-2">D${j + 1}</th>`).join("")}<th class="p-2">Oferta</th></tr></thead>
+      <tbody>${Array.from({ length: origins }, (_, i) => `
+        <tr><th class="p-1 text-left">O${i + 1}</th>${Array.from({ length: destinations }, (_, j) => `<td class="p-1"><input class="transport-cost w-16 rounded-lg border border-ink/10 bg-white px-2 py-2 text-center" type="number" min="0" step="any" value="${i === j ? 2 : 5}" data-origin="${i}" data-destination="${j}" aria-label="Costo O${i + 1} D${j + 1}"></td>`).join("")}<td class="p-1"><input class="transport-supply w-20 rounded-lg border border-ink/10 bg-white px-2 py-2 text-center" type="number" min="0" step="any" value="20" data-origin="${i}" aria-label="Oferta O${i + 1}"></td></tr>
+      `).join("")}</tbody>
+      <tfoot><tr><th class="p-2 text-left">Demanda</th>${Array.from({ length: destinations }, (_, j) => `<td class="p-1"><input class="transport-demand w-20 rounded-lg border border-ink/10 bg-white px-2 py-2 text-center" type="number" min="0" step="any" value="15" data-destination="${j}" aria-label="Demanda D${j + 1}"></td>`).join("")}<td></td></tr></tfoot>
+    </table>
+  `;
+}
+
 variableCount.addEventListener("change", renderConstraintEditor);
 constraintCount.addEventListener("change", renderConstraintEditor);
 addConstraint.addEventListener("click", () => {
   renderConstraintEditor();
   showToast("Campos de restricciones actualizados");
 });
+originCount.addEventListener("change", renderTransportMatrix);
+destinationCount.addEventListener("change", renderTransportMatrix);
 
 function parseNumbers(value, expected, label) {
   const parts = value.split(",").map(item => item.trim());
@@ -145,6 +190,18 @@ function collectModel() {
   return { tipo: mode, objetivo: objective, restricciones };
 }
 
+function collectTransportModel() {
+  const origins = Number.parseInt(originCount.value, 10);
+  const destinations = Number.parseInt(destinationCount.value, 10);
+  const costos = Array.from({ length: origins }, (_, i) => Array.from({ length: destinations }, (_, j) => {
+    const input = transportMatrix.querySelector(`[data-origin="${i}"][data-destination="${j}"]`);
+    return parseTerm(input.value, `El costo O${i + 1}-D${j + 1}`);
+  }));
+  const oferta = Array.from({ length: origins }, (_, i) => parseTerm(transportMatrix.querySelector(`.transport-supply[data-origin="${i}"]`).value, `La oferta O${i + 1}`));
+  const demanda = Array.from({ length: destinations }, (_, j) => parseTerm(transportMatrix.querySelector(`.transport-demand[data-destination="${j}"]`).value, `La demanda D${j + 1}`));
+  return { costos, oferta, demanda };
+}
+
 function formatNumber(value) {
   return Number(value).toFixed(4).replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
 }
@@ -155,6 +212,33 @@ function formatModel(model) {
     const left = restriction.coeficientes.map((value, variable) => `${formatNumber(value)}x${variable + 1}`).join(" + ");
     return `<div class="constraint-result">R${index + 1}: ${left} ${restriction.relacion} ${formatNumber(restriction.termino_independiente)}</div>`;
   }).join("");
+}
+
+function formatTransportModel(model) {
+  objectivePreview.textContent = `Problema de transporte · ${model.oferta.length} orígenes · ${model.demanda.length} destinos`;
+  constraintsPreview.innerHTML = `<div class="constraint-result">Oferta: [${model.oferta.map(formatNumber).join(", ")}]</div><div class="constraint-result">Demanda: [${model.demanda.map(formatNumber).join(", ")}]</div>`;
+}
+
+function renderAllocationTable(solution, result) {
+  const body = solution.asignaciones.map((row, i) => `<tr><th class="border border-ink/10 px-2 py-1.5 text-left">O${i + 1}</th>${row.map(value => `<td class="border border-ink/10 px-2 py-1.5 text-right">${formatNumber(value)}</td>`).join("")}</tr>`).join("");
+  return `<div class="mb-3 overflow-x-auto"><table class="w-full border-collapse font-mono text-[11px]"><thead><tr><th class="border border-ink/10 bg-ink px-2 py-1.5 text-left text-white">Asignación</th>${solution.asignaciones[0].map((_, j) => `<th class="border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">D${j + 1}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div><p class="font-bold">Costo total: ${formatNumber(solution.costo_total)}</p>`;
+}
+
+function renderTransportResult(result) {
+  graphicSection.classList.add("hidden");
+  stepsTitle.textContent = "3. Desarrollo de los métodos de transporte";
+  objectivePreview.textContent = "Problema de transporte balanceado";
+  constraintsPreview.innerHTML = `<div class="constraint-result">${result.mensaje}</div>`;
+  stepsOutput.innerHTML = result.soluciones.map(solution => `
+    <article class="rounded-xl border border-ink/10 bg-[#F6F9FA] p-4">
+      <h4 class="mb-2 text-base font-bold">${solution.nombre} · Costo ${formatNumber(solution.costo_total)}</h4>
+      ${solution.pasos.map(step => `<div class="mb-2 rounded-lg bg-white p-3"><strong class="block text-xs">${step.titulo}</strong><span class="whitespace-pre-line text-xs leading-5 text-[#597081]">${step.detalle}</span></div>`).join("")}
+      ${renderAllocationTable(solution, result)}
+    </article>
+  `).join("");
+  const mejor = result.soluciones.reduce((actual, solution) => solution.costo_total < actual.costo_total ? solution : actual);
+  finalAnswer.textContent = `Mejor costo: ${formatNumber(mejor.costo_total)}`;
+  finalDescription.textContent = `La solución con menor costo inicial es la obtenida por ${mejor.nombre}. Posteriormente se podrá verificar y optimizar con MODI.`;
 }
 
 function sectionLabel(text) {
@@ -285,6 +369,8 @@ function renderStepsRevisado(result, title) {
 }
 
 function renderSimplexResult(result) {
+  graphicSection.classList.add("hidden");
+  stepsTitle.textContent = "3. Desarrollo del método";
   const values = result.valores_variables.map((value, index) => `${result.nombres_variables[index] || `x${index + 1}`} = ${formatNumber(value)}`).join(", ");
   finalAnswer.textContent = result.valor_objetivo === null ? result.estado : `Z = ${formatNumber(result.valor_objetivo)}`;
   finalDescription.textContent = `${result.mensaje} ${values}`;
@@ -294,7 +380,100 @@ function renderSimplexResult(result) {
     : renderSteps(result, nombreMetodo);
 }
 
+function renderGraphicResult(result, model) {
+  graphicSection.classList.remove("hidden");
+  stepsTitle.textContent = "4. Vértices candidatos";
+  const points = result.vertices;
+  const maxCoordinate = Math.max(
+    10,
+    ...points.flatMap(point => [point.x, point.y]),
+    ...model.restricciones.flatMap(restriction => {
+      const [a, b] = restriction.coeficientes;
+      return [
+        Math.abs(a) > 1e-8 ? Math.abs(restriction.termino_independiente / a) : 0,
+        Math.abs(b) > 1e-8 ? Math.abs(restriction.termino_independiente / b) : 0
+      ];
+    })
+  ) * 1.12;
+  const width = 620;
+  const height = 360;
+  const padding = { left: 48, right: 18, top: 18, bottom: 38 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const toSvg = (x, y) => ({
+    x: padding.left + (x / maxCoordinate) * plotWidth,
+    y: height - padding.bottom - (y / maxCoordinate) * plotHeight
+  });
+  const cross = (origin, first, second) => (
+    (first.x - origin.x) * (second.y - origin.y)
+    - (first.y - origin.y) * (second.x - origin.x)
+  );
+  const hull = [...points].sort((a, b) => a.x - b.x || a.y - b.y).reduce((result, point) => {
+    while (result.length >= 2 && cross(result[result.length - 2], result[result.length - 1], point) <= 0) result.pop();
+    result.push(point);
+    return result;
+  }, []);
+  const upperHull = [...points].sort((a, b) => a.x - b.x || a.y - b.y).reverse().reduce((result, point) => {
+    while (result.length >= 2 && cross(result[result.length - 2], result[result.length - 1], point) <= 0) result.pop();
+    result.push(point);
+    return result;
+  }, []);
+  const polygon = [...hull.slice(0, -1), ...upperHull.slice(0, -1)];
+  const polygonPoints = polygon.map(point => {
+    const svgPoint = toSvg(point.x, point.y);
+    return `${svgPoint.x},${svgPoint.y}`;
+  }).join(" ");
+  const lines = model.restricciones.map((restriction, index) => {
+    const [a, b] = restriction.coeficientes;
+    const rhs = restriction.termino_independiente;
+    if (Math.abs(a) <= 1e-8 && Math.abs(b) <= 1e-8) return "";
+    const start = Math.abs(b) > 1e-8 ? toSvg(0, rhs / b) : toSvg(rhs / a, 0);
+    const end = Math.abs(b) > 1e-8 ? toSvg(maxCoordinate, (rhs - a * maxCoordinate) / b) : start;
+    return `<line x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}" stroke="#7EA0B7" stroke-width="2" stroke-dasharray="6 4"/><text x="${Math.max(padding.left, Math.min(width - 35, end.x - 4))}" y="${Math.max(padding.top + 12, Math.min(height - padding.bottom, end.y - 5))}" class="graph-label">R${index + 1}</text>`;
+  }).join("");
+  const pointMarks = points.map((point, index) => {
+    const svgPoint = toSvg(point.x, point.y);
+    return `<circle cx="${svgPoint.x}" cy="${svgPoint.y}" r="4.5" fill="${index === points.findIndex(item => item.x === result.valores_variables[0] && item.y === result.valores_variables[1]) ? "#36494E" : "#50856E"}"/><text x="${svgPoint.x + 7}" y="${svgPoint.y - 7}" class="graph-label">(${formatNumber(point.x)}, ${formatNumber(point.y)})</text>`;
+  }).join("");
+  const ticks = Array.from({ length: 5 }, (_, index) => {
+    const value = (maxCoordinate / 4) * index;
+    const x = toSvg(value, 0).x;
+    const y = toSvg(0, value).y;
+    return `<text x="${x}" y="${height - 14}" class="graph-axis-label" text-anchor="middle">${formatNumber(value)}</text><text x="${padding.left - 8}" y="${y + 4}" class="graph-axis-label" text-anchor="end">${formatNumber(value)}</text>`;
+  }).join("");
+  graphicOutput.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" class="min-w-[560px] w-full" role="img" aria-label="Gráfica de la región factible">
+      <style>.graph-label{font:10px 'DM Mono',monospace;fill:#36494E}.graph-axis-label{font:10px 'DM Mono',monospace;fill:#597081}</style>
+      <rect x="${padding.left}" y="${padding.top}" width="${plotWidth}" height="${plotHeight}" fill="#fff" rx="12"/>
+      <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}" stroke="#36494E" stroke-width="1.5"/>
+      <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${padding.left}" y2="${padding.top}" stroke="#36494E" stroke-width="1.5"/>
+      ${ticks}${lines}
+      ${points.length > 2 ? `<polygon points="${polygonPoints}" fill="#A9CEF4" fill-opacity=".45" stroke="#50856E" stroke-width="2"/>` : ""}
+      ${pointMarks}
+      <text x="${width - 13}" y="${height - padding.bottom + 2}" class="graph-label">x1</text>
+      <text x="${padding.left - 8}" y="${padding.top - 5}" class="graph-label">x2</text>
+    </svg>
+  `;
+  const detailedSteps = (result.pasos || []).map(step => `
+    <article class="rounded-xl border border-ink/10 bg-[#F6F9FA] p-4">
+      <h4 class="mb-2 text-sm font-bold text-ink">${step.titulo}</h4>
+      <div class="whitespace-pre-line font-mono text-xs leading-6 text-[#597081]">${step.detalle}</div>
+    </article>
+  `).join("");
+  const verticesStep = points.length
+    ? `<article class="rounded-xl border border-ink/10 bg-mist p-4">
+        <h4 class="mb-2 text-sm font-bold text-ink">Vértices factibles encontrados</h4>
+        ${points.map((point, index) => `<div class="font-mono text-xs leading-6">${index + 1}. (${formatNumber(point.x)}, ${formatNumber(point.y)}) → Z = ${formatNumber(point.valor_objetivo)}</div>`).join("")}
+      </article>`
+    : `<article class="rounded-xl bg-[#F8EEEE] px-4 py-3 text-sm text-[#9A4E4E]">${result.mensaje}</article>`;
+  stepsOutput.innerHTML = detailedSteps + verticesStep;
+  finalAnswer.textContent = result.valor_objetivo === null ? result.estado : `Z = ${formatNumber(result.valor_objetivo)}`;
+  finalDescription.textContent = `${result.mensaje} x1 = ${formatNumber(result.valores_variables[0] ?? 0)}, x2 = ${formatNumber(result.valores_variables[1] ?? 0)}`;
+}
+
 function renderDualResult(result) {
+  graphicSection.classList.add("hidden");
+  stepsTitle.textContent = "3. Desarrollo del método";
   const primal = result.primal;
   const dual = result.dual;
   const primalValue = primal.valor_objetivo === null ? primal.estado : formatNumber(primal.valor_objetivo);
@@ -309,9 +488,12 @@ async function solve() {
   solveBtn.disabled = true;
   solveBtn.textContent = "Resolviendo...";
   try {
-    const model = collectModel();
-    formatModel(model);
-    const endpoint = selectedMethod === "simplex" ? "/api/simplex/resolver" : selectedMethod === "simplexRevisado" ? "/api/simplex-revisado/resolver" : "/api/dualidad/resolver";
+    const model = selectedMethod === "transporte" ? collectTransportModel() : collectModel();
+    selectedMethod === "transporte" ? formatTransportModel(model) : formatModel(model);
+    if (selectedMethod === "grafico" && model.objetivo.length !== 2) {
+      throw new Error("El método gráfico requiere exactamente dos variables.");
+    }
+    const endpoint = endpointFor(selectedMethod);
     const response = await fetch(`${API_URL}${endpoint}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(model) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -320,7 +502,10 @@ async function solve() {
       }
       throw new Error(data.detail?.[0]?.msg || `La API rechazó el modelo (${response.status}).`);
     }
-    selectedMethod === "dualidad" ? renderDualResult(data) : renderSimplexResult(data);
+    if (selectedMethod === "dualidad") renderDualResult(data);
+    else if (selectedMethod === "grafico") renderGraphicResult(data, model);
+    else if (selectedMethod === "transporte") renderTransportResult(data);
+    else renderSimplexResult(data);
     await setResultsVisible(true);
   } catch (error) {
     formError.textContent = error.message || "No se pudo resolver el modelo.";
@@ -381,6 +566,9 @@ clearEntry.addEventListener("click", () => {
   objectiveCoefficients.value = "";
   variableCount.value = "2";
   constraintCount.value = "2";
+  originCount.value = "3";
+  destinationCount.value = "4";
+  renderTransportMatrix();
   renderConstraintEditor();
   setResultsVisible(false);
   formError.textContent = "";
@@ -393,6 +581,7 @@ async function resetCalculator(clearEverything = true) {
 
 resetBtn.addEventListener("click", () => resetCalculator(true));
 renderConstraintEditor();
+renderTransportMatrix();
 
 function showToast(message) {
   toast.textContent = message;
