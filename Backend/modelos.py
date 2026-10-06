@@ -28,6 +28,15 @@ class PasoSimplex:
     entra: str = ""
     sale: str = ""
     razon: str = ""
+    # Campos exclusivos del metodo simplex revisado: exponen las operaciones
+    # matriciales (B^-1, y = c_B B^-1, x_B = B^-1 b y la columna B^-1 A_j de
+    # la variable entrante) que lo distinguen del metodo simplex por tablas.
+    base_inversa: List[List[float]] | None = None
+    cb: List[float] | None = None
+    y: List[float] | None = None
+    xb: List[float] | None = None
+    costos_reducidos: List[float] | None = None
+    columna_pivote: List[float] | None = None
 
 
 @dataclass
