@@ -7,6 +7,7 @@ Calculadora de terminal para resolver problemas de programacion lineal con:
 - Restricciones `<=`, `>=` y `=`.
 - Problemas de maximizacion y minimizacion.
 - Construccion y resolucion del problema dual.
+- Metodo grafico para problemas con exactamente dos variables.
 - Tablas completas del tableau y movimientos de pivote.
 - Expresiones numericas como `3/2`, `sqrt(2)`, `pi` y `2^3`.
 
@@ -152,14 +153,41 @@ Instale las dependencias:
 python -m pip install -r requirements.txt
 ```
 
-Inicie el servidor desde la carpeta principal del proyecto:
+Inicie el servidor desde la carpeta principal del proyecto (la carpeta que
+contiene `Backend`):
 
 ```powershell
-python -m uvicorn api.main:app --reload
+python -m uvicorn Backend.api.main:app --reload
 ```
 
 La API quedara disponible en `http://127.0.0.1:8000`. FastAPI genera una
 interfaz para probar los endpoints en `http://127.0.0.1:8000/docs`.
+
+Si actualmente se encuentra dentro de la carpeta `Backend`, vuelva primero a
+la carpeta principal:
+
+```powershell
+cd ..
+python -m uvicorn Backend.api.main:app --reload
+```
+
+### Ejecucion del frontend
+
+El frontend es una aplicacion estatica. Inicie un segundo servidor desde la
+carpeta `Frontend`, en otra terminal:
+
+```powershell
+cd "C:\Users\David\Documents\FESC\8_Semestre\Geiner\Primer Corte\Frontend"
+python -m http.server 5500
+```
+
+Abra `http://127.0.0.1:5500` en el navegador. En desarrollo deben mantenerse
+ejecutandose ambos servidores:
+
+| Terminal | Carpeta | Comando | Direccion |
+| --- | --- | --- | --- |
+| Backend | Carpeta principal | `python -m uvicorn Backend.api.main:app --reload` | `http://127.0.0.1:8000` |
+| Frontend | `Frontend` | `python -m http.server 5500` | `http://127.0.0.1:5500` |
 
 ### Endpoint de Simplex
 
@@ -209,6 +237,18 @@ POST /api/dualidad/resolver
 Recibe el mismo JSON del problema primal. La respuesta contiene el primal, el
 dual construido, sus resultados y un indicador `valores_coinciden` para comparar
 los valores optimos cuando ambos problemas tienen solucion.
+
+### Endpoint del método gráfico
+
+```text
+POST /api/grafico/resolver
+```
+
+Recibe el mismo JSON del problema primal, pero requiere exactamente dos
+variables. La respuesta incluye los vértices de la región factible, el valor
+de la función objetivo en cada vértice y la solución óptima. La interfaz web
+representa estos datos en una gráfica junto con las rectas de las
+restricciones.
 
 ### Salud del servicio
 

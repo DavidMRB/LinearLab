@@ -22,6 +22,9 @@ const constraintCount = document.getElementById("constraintCount");
 const constraintsPreview = document.getElementById("constraintsPreview");
 const objectivePreview = document.getElementById("objectivePreview");
 const stepsOutput = document.getElementById("stepsOutput");
+const stepsTitle = document.getElementById("stepsTitle");
+const graphicSection = document.getElementById("graphicSection");
+const graphicOutput = document.getElementById("graphicOutput");
 const finalAnswer = document.getElementById("finalAnswer");
 const finalDescription = document.getElementById("finalDescription");
 const formError = document.getElementById("formError");
@@ -33,7 +36,8 @@ let mode = "max";
 const methodData = {
   simplex: { name: "Método Simplex", icon: "Σ", title: "Resolución mediante el Método Simplex" },
   simplexRevisado: { name: "Simplex Revisado", icon: "B⁻¹", title: "Resolución mediante Simplex Revisado" },
-  dualidad: { name: "Método de Dualidad", icon: "⇄", title: "Resolución mediante Dualidad" }
+  dualidad: { name: "Método de Dualidad", icon: "⇄", title: "Resolución mediante Dualidad" },
+  grafico: { name: "Método Gráfico", icon: "↗", title: "Resolución mediante el Método Gráfico" }
 };
 
 function selectMethod(method, firstView = false) {
@@ -176,13 +180,98 @@ function renderSteps(result, title) {
 }
 
 function renderSimplexResult(result) {
+  graphicSection.classList.add("hidden");
+  stepsTitle.textContent = "3. Desarrollo del método";
   const values = result.valores_variables.map((value, index) => `${result.nombres_variables[index] || `x${index + 1}`} = ${formatNumber(value)}`).join(", ");
   finalAnswer.textContent = result.valor_objetivo === null ? result.estado : `Z = ${formatNumber(result.valor_objetivo)}`;
   finalDescription.textContent = `${result.mensaje} ${values}`;
   stepsOutput.innerHTML = renderSteps(result, "Simplex");
 }
 
+function renderGraphicResult(result, model) {
+  graphicSection.classList.remove("hidden");
+  stepsTitle.textContent = "4. Vértices candidatos";
+  const points = result.vertices;
+  const maxCoordinate = Math.max(
+    10,
+    ...points.flatMap(point => [point.x, point.y]),
+    ...model.restricciones.flatMap(restriction => {
+      const [a, b] = restriction.coeficientes;
+      return [
+        Math.abs(a) > 1e-8 ? Math.abs(restriction.termino_independiente / a) : 0,
+        Math.abs(b) > 1e-8 ? Math.abs(restriction.termino_independiente / b) : 0
+      ];
+    })
+  ) * 1.12;
+  const width = 620;
+  const height = 360;
+  const padding = { left: 48, right: 18, top: 18, bottom: 38 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const toSvg = (x, y) => ({
+    x: padding.left + (x / maxCoordinate) * plotWidth,
+    y: height - padding.bottom - (y / maxCoordinate) * plotHeight
+  });
+  const cross = (origin, first, second) => (
+    (first.x - origin.x) * (second.y - origin.y)
+    - (first.y - origin.y) * (second.x - origin.x)
+  );
+  const hull = [...points].sort((a, b) => a.x - b.x || a.y - b.y).reduce((result, point) => {
+    while (result.length >= 2 && cross(result[result.length - 2], result[result.length - 1], point) <= 0) result.pop();
+    result.push(point);
+    return result;
+  }, []);
+  const upperHull = [...points].sort((a, b) => a.x - b.x || a.y - b.y).reverse().reduce((result, point) => {
+    while (result.length >= 2 && cross(result[result.length - 2], result[result.length - 1], point) <= 0) result.pop();
+    result.push(point);
+    return result;
+  }, []);
+  const polygon = [...hull.slice(0, -1), ...upperHull.slice(0, -1)];
+  const polygonPoints = polygon.map(point => {
+    const svgPoint = toSvg(point.x, point.y);
+    return `${svgPoint.x},${svgPoint.y}`;
+  }).join(" ");
+  const lines = model.restricciones.map((restriction, index) => {
+    const [a, b] = restriction.coeficientes;
+    const rhs = restriction.termino_independiente;
+    if (Math.abs(a) <= 1e-8 && Math.abs(b) <= 1e-8) return "";
+    const start = Math.abs(b) > 1e-8 ? toSvg(0, rhs / b) : toSvg(rhs / a, 0);
+    const end = Math.abs(b) > 1e-8 ? toSvg(maxCoordinate, (rhs - a * maxCoordinate) / b) : start;
+    return `<line x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}" stroke="#7EA0B7" stroke-width="2" stroke-dasharray="6 4"/><text x="${Math.max(padding.left, Math.min(width - 35, end.x - 4))}" y="${Math.max(padding.top + 12, Math.min(height - padding.bottom, end.y - 5))}" class="graph-label">R${index + 1}</text>`;
+  }).join("");
+  const pointMarks = points.map((point, index) => {
+    const svgPoint = toSvg(point.x, point.y);
+    return `<circle cx="${svgPoint.x}" cy="${svgPoint.y}" r="4.5" fill="${index === points.findIndex(item => item.x === result.valores_variables[0] && item.y === result.valores_variables[1]) ? "#36494E" : "#50856E"}"/><text x="${svgPoint.x + 7}" y="${svgPoint.y - 7}" class="graph-label">(${formatNumber(point.x)}, ${formatNumber(point.y)})</text>`;
+  }).join("");
+  const ticks = Array.from({ length: 5 }, (_, index) => {
+    const value = (maxCoordinate / 4) * index;
+    const x = toSvg(value, 0).x;
+    const y = toSvg(0, value).y;
+    return `<text x="${x}" y="${height - 14}" class="graph-axis-label" text-anchor="middle">${formatNumber(value)}</text><text x="${padding.left - 8}" y="${y + 4}" class="graph-axis-label" text-anchor="end">${formatNumber(value)}</text>`;
+  }).join("");
+  graphicOutput.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" class="min-w-[560px] w-full" role="img" aria-label="Gráfica de la región factible">
+      <style>.graph-label{font:10px 'DM Mono',monospace;fill:#36494E}.graph-axis-label{font:10px 'DM Mono',monospace;fill:#597081}</style>
+      <rect x="${padding.left}" y="${padding.top}" width="${plotWidth}" height="${plotHeight}" fill="#fff" rx="12"/>
+      <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}" stroke="#36494E" stroke-width="1.5"/>
+      <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${padding.left}" y2="${padding.top}" stroke="#36494E" stroke-width="1.5"/>
+      ${ticks}${lines}
+      ${points.length > 2 ? `<polygon points="${polygonPoints}" fill="#A9CEF4" fill-opacity=".45" stroke="#50856E" stroke-width="2"/>` : ""}
+      ${pointMarks}
+      <text x="${width - 13}" y="${height - padding.bottom + 2}" class="graph-label">x1</text>
+      <text x="${padding.left - 8}" y="${padding.top - 5}" class="graph-label">x2</text>
+    </svg>
+  `;
+  stepsOutput.innerHTML = points.length
+    ? `<div class="rounded-xl bg-mist px-4 py-3 text-sm text-[#597081]">${points.map((point, index) => `<div class="font-mono">${index + 1}. (${formatNumber(point.x)}, ${formatNumber(point.y)}) → Z = ${formatNumber(point.valor_objetivo)}</div>`).join("")}</div>`
+    : `<div class="rounded-xl bg-[#F8EEEE] px-4 py-3 text-sm text-[#9A4E4E]">${result.mensaje}</div>`;
+  finalAnswer.textContent = result.valor_objetivo === null ? result.estado : `Z = ${formatNumber(result.valor_objetivo)}`;
+  finalDescription.textContent = `${result.mensaje} x1 = ${formatNumber(result.valores_variables[0] ?? 0)}, x2 = ${formatNumber(result.valores_variables[1] ?? 0)}`;
+}
+
 function renderDualResult(result) {
+  graphicSection.classList.add("hidden");
+  stepsTitle.textContent = "3. Desarrollo del método";
   const primal = result.primal;
   const dual = result.dual;
   const primalValue = primal.valor_objetivo === null ? primal.estado : formatNumber(primal.valor_objetivo);
@@ -199,7 +288,10 @@ async function solve() {
   try {
     const model = collectModel();
     formatModel(model);
-    const endpoint = selectedMethod === "simplex" ? "/api/simplex/resolver" : selectedMethod === "simplexRevisado" ? "/api/simplex-revisado/resolver" : "/api/dualidad/resolver";
+    if (selectedMethod === "grafico" && model.objetivo.length !== 2) {
+      throw new Error("El método gráfico requiere exactamente dos variables.");
+    }
+    const endpoint = selectedMethod === "simplex" ? "/api/simplex/resolver" : selectedMethod === "simplexRevisado" ? "/api/simplex-revisado/resolver" : selectedMethod === "grafico" ? "/api/grafico/resolver" : "/api/dualidad/resolver";
     const response = await fetch(`${API_URL}${endpoint}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(model) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -208,7 +300,9 @@ async function solve() {
       }
       throw new Error(data.detail?.[0]?.msg || `La API rechazó el modelo (${response.status}).`);
     }
-    selectedMethod === "dualidad" ? renderDualResult(data) : renderSimplexResult(data);
+    if (selectedMethod === "dualidad") renderDualResult(data);
+    else if (selectedMethod === "grafico") renderGraphicResult(data, model);
+    else renderSimplexResult(data);
     await setResultsVisible(true);
   } catch (error) {
     formError.textContent = error.message || "No se pudo resolver el modelo.";

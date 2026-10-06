@@ -82,6 +82,17 @@
             </div>
             <div class="ml-auto text-3xl text-steel transition group-hover:translate-x-1.5">→</div>
           </button>
+
+          <button class="method-card group flex min-h-60 flex-wrap content-between gap-5 rounded-3xl border border-ink/10 bg-white/75 p-7 text-left shadow-sm transition hover:-translate-y-1.5 hover:border-steel hover:shadow-2xl" data-method="grafico">
+            <div class="grid size-[72px] place-items-center rounded-3xl bg-[#DCEFE7] text-3xl font-bold text-[#50856E]">
+              <span>↗</span>
+            </div>
+            <div class="basis-[calc(100%-100px)] pt-1">
+              <h2 class="mb-2 text-xl font-bold">Método Gráfico</h2>
+              <p class="text-sm leading-6 text-[#597081]">Visualiza la región factible y encuentra el óptimo en dos variables.</p>
+            </div>
+            <div class="ml-auto text-3xl text-steel transition group-hover:translate-x-1.5">→</div>
+          </button>
         </div>
       </div>
 
@@ -126,6 +137,11 @@
               <div><strong class="block text-[13px]">Simplex Revisado</strong><small class="mt-1 block text-[11px] text-[#597081]">Matriz de la base</small></div>
               <span class="option-check ml-auto text-steel opacity-0">✓</span>
             </button>
+            <button class="workspace-option flex w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-mist" data-method="grafico">
+              <div class="grid size-10 place-items-center rounded-xl bg-[#DCEFE7] font-extrabold text-[#50856E]">↗</div>
+              <div><strong class="block text-[13px]">Método Gráfico</strong><small class="mt-1 block text-[11px] text-[#597081]">Región factible en dos variables</small></div>
+              <span class="option-check ml-auto text-steel opacity-0">✓</span>
+            </button>
           </div>
         </div>
 
@@ -155,8 +171,13 @@
               <div id="constraintsPreview" class="grid gap-2 font-mono text-xs"></div>
             </div>
 
+            <div id="graphicSection" class="mb-6 hidden border-b border-ink/10 pb-6">
+              <h3 class="mb-4 text-[13px] font-bold">3. Región factible</h3>
+              <div id="graphicOutput" class="overflow-x-auto rounded-2xl bg-[#F6F9FA] p-2"></div>
+            </div>
+
             <div class="mb-6 border-b border-ink/10 pb-6">
-              <h3 class="mb-4 text-[13px] font-bold">3. Desarrollo del método</h3>
+              <h3 id="stepsTitle" class="mb-4 text-[13px] font-bold">3. Desarrollo del método</h3>
               <div id="stepsOutput" class="grid gap-3"></div>
             </div>
 

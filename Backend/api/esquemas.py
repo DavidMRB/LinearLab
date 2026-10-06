@@ -61,3 +61,17 @@ class DualidadSalida(BaseModel):
     dual: ResultadoSalida
     modelo_dual: ProblemaEntrada
     valores_coinciden: bool | None
+
+
+class VerticeGraficoSalida(BaseModel):
+    x: float
+    y: float
+    valor_objetivo: float
+
+
+class GraficoSalida(BaseModel):
+    estado: str
+    valor_objetivo: float | None
+    valores_variables: list[float]
+    vertices: list[VerticeGraficoSalida]
+    mensaje: str
