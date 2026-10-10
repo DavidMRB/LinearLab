@@ -37,6 +37,18 @@ const toast = document.getElementById("toast");
 const standardEditor = document.getElementById("standardEditor");
 const transportEditor = document.getElementById("transportEditor");
 const transportMatrix = document.getElementById("transportMatrix");
+const assignmentEditor = document.getElementById("assignmentEditor");
+const assignmentMatrix = document.getElementById("assignmentMatrix");
+const assignmentRowCount = document.getElementById("assignmentRowCount");
+const assignmentColumnCount = document.getElementById("assignmentColumnCount");
+const flowEditor = document.getElementById("flowEditor");
+const flowEdges = document.getElementById("flowEdges");
+const flowNodeCount = document.getElementById("flowNodeCount");
+const flowEdgeCount = document.getElementById("flowEdgeCount");
+const flowSource = document.getElementById("flowSource");
+const flowSink = document.getElementById("flowSink");
+const flowDemand = document.getElementById("flowDemand");
+const flowDemandLabel = document.getElementById("flowDemandLabel");
 const originCount = document.getElementById("originCount");
 const destinationCount = document.getElementById("destinationCount");
 const objectiveMode = document.getElementById("objectiveMode");
@@ -53,22 +65,72 @@ function selectMethod(method, firstView = false) {
   calcTitle.textContent = data.name;
   solutionTitle.textContent = data.title;
   const esTransporte = method === "transporte";
+  const esAsignacion = method === "asignacion";
+  const esFlujo = method === "flujoMaximo" || method === "flujoCostoMinimo";
   calculator.classList.toggle("transport-mode", esTransporte);
-  standardEditor.classList.toggle("hidden", esTransporte);
-  constraintEditor.classList.toggle("hidden", esTransporte);
+  calculator.classList.toggle("assignment-mode", esAsignacion);
+  calculator.classList.toggle("flow-mode", esFlujo);
+  standardEditor.classList.toggle("hidden", esTransporte || esAsignacion || esFlujo);
+  constraintEditor.classList.toggle("hidden", esTransporte || esAsignacion || esFlujo);
   transportEditor.classList.toggle("hidden", !esTransporte);
-  objectiveMode.classList.toggle("hidden", esTransporte);
-  addConstraint.classList.toggle("hidden", esTransporte);
+  assignmentEditor.classList.toggle("hidden", !esAsignacion);
+  flowEditor.classList.toggle("hidden", !esFlujo);
+  flowDemandLabel.classList.toggle("hidden", method !== "flujoCostoMinimo");
+  objectiveMode.classList.toggle("hidden", esTransporte || esAsignacion || esFlujo);
+  addConstraint.classList.toggle("hidden", esTransporte || esAsignacion || esFlujo);
   if (esTransporte) renderTransportMatrix();
+  if (esAsignacion) renderAssignmentMatrix();
+  if (esFlujo) renderFlowEdges();
   document.querySelectorAll(".workspace-option").forEach(option => {
     option.classList.toggle("active", option.dataset.method === method);
+    option.classList.toggle("bg-mist", option.dataset.method === method);
+    option.querySelector(".option-check").classList.toggle("opacity-0", option.dataset.method !== method);
   });
   if (firstView) {
     welcomeScreen.classList.add("hidden");
     calculatorScreen.classList.remove("hidden");
     renderConstraintEditor();
   }
+
   methodMenu.classList.remove("show");
+}
+
+function collectAssignmentModel() {
+  const rows = Number.parseInt(assignmentRowCount.value, 10);
+  const columns = Number.parseInt(assignmentColumnCount.value, 10);
+  if (!Number.isInteger(rows) || rows < 1 || rows > 20 || !Number.isInteger(columns) || columns < 1 || columns > 20) {
+    throw new Error("La cantidad de trabajadores y tareas debe estar entre 1 y 20.");
+  }
+  const costos = Array.from({ length: rows }, (_, i) => Array.from({ length: columns }, (_, j) => {
+    const input = assignmentMatrix.querySelector(`[data-assignment-row="${i}"][data-assignment-column="${j}"]`);
+    if (!input) {
+      throw new Error("Actualiza la matriz antes de resolver el problema de asignación.");
+    }
+    return parseTerm(input.value, `El costo del trabajador ${i + 1} y tarea ${j + 1}`);
+  }));
+  return { costos };
+}
+
+function collectFlowModel() {
+  const nodos = Number.parseInt(flowNodeCount.value, 10);
+  const origen = Number.parseInt(flowSource.value, 10);
+  const destino = Number.parseInt(flowSink.value, 10);
+  if (!Number.isInteger(nodos) || nodos < 2 || nodos > 20) throw new Error("La cantidad de nodos debe estar entre 2 y 20.");
+  if (!Number.isInteger(origen) || !Number.isInteger(destino) || origen === destino || origen < 1 || destino < 1 || origen > nodos || destino > nodos) {
+    throw new Error("El origen y el destino deben ser nodos distintos y válidos.");
+  }
+  const aristas = [...flowEdges.querySelectorAll(".flow-edge")].map((row, index) => ({
+    origen: Number.parseInt(row.querySelector(".flow-from").value, 10),
+    destino: Number.parseInt(row.querySelector(".flow-to").value, 10),
+    capacidad: parseTerm(row.querySelector(".flow-capacity").value, `La capacidad de la arista ${index + 1}`),
+    costo: parseTerm(row.querySelector(".flow-cost").value, `El costo de la arista ${index + 1}`)
+  }));
+  if (aristas.some(edge => edge.origen === edge.destino || edge.origen < 1 || edge.destino < 1 || edge.origen > nodos || edge.destino > nodos)) {
+    throw new Error("Cada arista debe conectar dos nodos distintos y existentes.");
+  }
+  const model = { nodos, origen, destino, aristas };
+  if (selectedMethod === "flujoCostoMinimo") model.flujo_requerido = parseTerm(flowDemand.value, "El flujo requerido");
+  return model;
 }
 
 document.querySelectorAll(".method-card").forEach(card => {
@@ -91,6 +153,7 @@ document.querySelectorAll(".workspace-option").forEach(option => {
     } else {
       methodMenu.classList.remove("show");
     }
+
   });
 });
 
@@ -136,6 +199,30 @@ function renderConstraintEditor() {
   `).join("");
 }
 
+function renderAssignmentResult(result) {
+  graphicSection.classList.add("hidden");
+  stepsTitle.textContent = "3. Desarrollo paso a paso de Kuhn-Munkres";
+  const renderAssignmentMatrix = (matrix, assignments = []) => {
+    if (!matrix) return "";
+    const selected = new Set((assignments || []).map(([worker, column]) => `${worker}-${column}`));
+    return `<div class="mt-3 overflow-x-auto"><table class="w-full min-w-[420px] border-collapse font-mono text-[11px]"><thead><tr><th class="border border-ink/10 bg-ink px-2 py-1.5 text-left text-white">Trabajador</th>${matrix[0].map((_, column) => `<th class="border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">T${column + 1}</th>`).join("")}</tr></thead><tbody>${matrix.map((row, worker) => `<tr><th class="border border-ink/10 bg-mist px-2 py-1.5 text-left">Trabajador ${worker + 1}</th>${row.map((value, column) => `<td class="border border-ink/10 px-2 py-1.5 text-right${selected.has(`${worker}-${column}`) ? " bg-ice font-bold" : ""}">${formatNumber(value)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+  };
+  stepsOutput.innerHTML = result.pasos.map((step, index) => `
+    <article class="rounded-xl border-l-4 border-steel bg-[#F6F9FA] p-4 text-sm leading-6">
+      <div class="mb-2 flex items-center gap-2"><span class="grid size-6 place-items-center rounded-full bg-ice text-xs font-extrabold">${index + 1}</span><strong>${step.titulo}</strong></div>
+      <span class="whitespace-pre-line text-xs leading-5 text-[#597081]">${step.detalle}</span>
+      ${renderAssignmentMatrix(step.matriz, step.asignaciones)}
+    </article>
+  `).join("") + `
+    <article class="rounded-xl border border-ink/10 bg-mist p-4">
+      <h4 class="mb-2 text-sm font-bold">Asignación óptima</h4>
+      <div class="grid gap-2 font-mono text-xs">${result.asignaciones.map(item => `<div>Trabajador ${item.fila + 1} → Tarea ${item.columna + 1} · costo ${formatNumber(item.costo)}</div>`).join("")}</div>
+    </article>
+  `;
+  finalAnswer.textContent = `Costo mínimo: ${formatNumber(result.costo_total)}`;
+  finalDescription.textContent = "Cada trabajador se asigna a una sola tarea y cada tarea recibe un solo trabajador. Las celdas azules son los ceros seleccionados.";
+}
+
 function renderTransportMatrix() {
   const origins = Number.parseInt(originCount.value, 10);
   const destinations = Number.parseInt(destinationCount.value, 10);
@@ -153,6 +240,79 @@ function renderTransportMatrix() {
   `;
 }
 
+function renderAssignmentMatrix() {
+  const rows = Number.parseInt(assignmentRowCount.value, 10);
+  const columns = Number.parseInt(assignmentColumnCount.value, 10);
+  if (!Number.isInteger(rows) || rows < 1 || rows > 20 || !Number.isInteger(columns) || columns < 1 || columns > 20) return;
+  const assignmentWidth = Math.min(1180, Math.max(620, 210 + columns * 78));
+  calculator.style.setProperty("--assignment-width", `${assignmentWidth}px`);
+  assignmentMatrix.style.setProperty("--assignment-width", `${Math.max(420, 150 + columns * 78)}px`);
+  assignmentMatrix.innerHTML = `
+    <table class="w-full border-collapse text-xs">
+      <thead><tr><th class="p-2 text-left">Costo</th>${Array.from({ length: columns }, (_, j) => `<th class="p-2">T${j + 1}</th>`).join("")}</tr></thead>
+      <tbody>${Array.from({ length: rows }, (_, i) => `
+        <tr><th class="p-1 text-left">Trabajador ${i + 1}</th>${Array.from({ length: columns }, (_, j) => `<td class="p-1"><input class="assignment-cost w-16 rounded-lg border border-ink/10 bg-white px-2 py-2 text-center" type="number" min="0" step="any" value="${i === j ? 2 : 5}" data-assignment-row="${i}" data-assignment-column="${j}" aria-label="Costo trabajador ${i + 1} tarea ${j + 1}"></td>`).join("")}</tr>
+      `).join("")}</tbody>
+    </table>
+  `;
+}
+
+function renderFlowEdges() {
+  const count = Number.parseInt(flowEdgeCount.value, 10);
+  const nodes = Number.parseInt(flowNodeCount.value, 10);
+  if (!Number.isInteger(count) || count < 1 || count > 40 || !Number.isInteger(nodes) || nodes < 2 || nodes > 20) return;
+  calculator.style.setProperty("--flow-width", `${Math.min(820, Math.max(470, 330 + nodes * 18))}px`);
+  flowEdges.innerHTML = Array.from({ length: count }, (_, index) => `
+    <div class="flow-edge grid grid-cols-2 gap-2 rounded-xl border border-ink/10 bg-mist/50 p-2 sm:grid-cols-4">
+      <label class="flow-field text-[10px] font-extrabold text-[#597081]">Desde
+        <input class="flow-from mt-1 w-full rounded-lg border border-ink/10 bg-white px-2 py-2 text-center text-xs" type="number" min="1" max="${nodes}" value="${index % nodes + 1}" aria-label="Origen de arista ${index + 1}">
+      </label>
+      <label class="flow-field text-[10px] font-extrabold text-[#597081]">Hasta
+        <input class="flow-to mt-1 w-full rounded-lg border border-ink/10 bg-white px-2 py-2 text-center text-xs" type="number" min="1" max="${nodes}" value="${(index + 1) % nodes + 1}" aria-label="Destino de arista ${index + 1}">
+      </label>
+      <label class="flow-field text-[10px] font-extrabold text-[#597081]">Capacidad
+        <input class="flow-capacity mt-1 w-full rounded-lg border border-ink/10 bg-white px-2 py-2 text-center text-xs" type="number" min="0" step="any" value="10" aria-label="Capacidad de arista ${index + 1}">
+      </label>
+      <label class="flow-field text-[10px] font-extrabold text-[#597081]">Costo
+        <input class="flow-cost mt-1 w-full rounded-lg border border-ink/10 bg-white px-2 py-2 text-center text-xs" type="number" step="any" value="${index + 1}" aria-label="Costo de arista ${index + 1}">
+      </label>
+    </div>
+  `).join("");
+}
+
+function formatFlowModel(model) {
+  objectivePreview.textContent = `${selectedMethod === "flujoMaximo" ? "FLUJO MÁXIMO" : "FLUJO A COSTO MÍNIMO"} · ${model.nodos} nodos · ${model.aristas.length} aristas`;
+  constraintsPreview.innerHTML = `<div class="constraint-result">Origen: N${model.origen} · Destino: N${model.destino}</div>${model.flujo_requerido === undefined ? "" : `<div class="constraint-result">Flujo requerido: ${formatNumber(model.flujo_requerido)}</div>`}`;
+}
+
+function renderFlowResult(result) {
+  graphicSection.classList.add("hidden");
+  stepsTitle.textContent = "3. Desarrollo paso a paso del algoritmo de flujo";
+  const renderFlowState = state => !state?.length ? "" : `
+    <div class="mt-3 overflow-x-auto">
+      <table class="w-full min-w-[440px] border-collapse font-mono text-[11px]">
+        <thead><tr><th class="border border-ink/10 bg-ink px-2 py-1.5 text-left text-white">Arista</th><th class="border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">Flujo</th><th class="border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">Capacidad</th>${selectedMethod === "flujoCostoMinimo" ? '<th class="border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">Costo</th>' : ""}</tr></thead>
+        <tbody>${state.map(edge => `<tr><td class="border border-ink/10 px-2 py-1.5">N${edge.origen} → N${edge.destino}</td><td class="border border-ink/10 px-2 py-1.5 text-right">${formatNumber(edge.flujo)}</td><td class="border border-ink/10 px-2 py-1.5 text-right">${formatNumber(edge.capacidad)}</td>${selectedMethod === "flujoCostoMinimo" ? `<td class="border border-ink/10 px-2 py-1.5 text-right">${formatNumber(edge.costo)}</td>` : ""}</tr>`).join("")}</tbody>
+      </table>
+    </div>`;
+  stepsOutput.innerHTML = result.pasos.map((step, index) => `
+    <article class="rounded-xl border-l-4 border-steel bg-[#F6F9FA] p-4">
+      <div class="mb-1 flex items-center gap-2"><span class="grid size-6 place-items-center rounded-full bg-ice text-xs font-extrabold">${index + 1}</span><strong>${step.titulo}</strong></div>
+      <span class="whitespace-pre-line text-xs leading-5 text-[#597081]">${step.detalle}</span>
+      ${renderFlowState(step.estado)}
+    </article>`).join("") + `
+    <article class="rounded-xl border border-ink/10 bg-mist p-4">
+      <h4 class="mb-2 text-sm font-bold">Flujo final por arista</h4>
+      <div class="grid gap-2 font-mono text-xs">
+        ${result.flujos.map(edge => `<div>N${edge.origen} → N${edge.destino}: ${formatNumber(edge.flujo)} / ${formatNumber(edge.capacidad)}${selectedMethod === "flujoCostoMinimo" ? ` · costo ${formatNumber(edge.costo)}` : ""}</div>`).join("")}
+      </div>
+    </article>`;
+  finalAnswer.textContent = selectedMethod === "flujoMaximo"
+    ? `Flujo máximo: ${formatNumber(result.flujo)}`
+    : `Costo mínimo: ${formatNumber(result.costo_total)}`;
+  finalDescription.textContent = result.mensaje;
+}
+
 variableCount.addEventListener("change", renderConstraintEditor);
 constraintCount.addEventListener("change", renderConstraintEditor);
 addConstraint.addEventListener("click", () => {
@@ -161,6 +321,10 @@ addConstraint.addEventListener("click", () => {
 });
 originCount.addEventListener("change", renderTransportMatrix);
 destinationCount.addEventListener("change", renderTransportMatrix);
+assignmentRowCount.addEventListener("input", renderAssignmentMatrix);
+assignmentColumnCount.addEventListener("input", renderAssignmentMatrix);
+flowNodeCount.addEventListener("change", renderFlowEdges);
+flowEdgeCount.addEventListener("change", renderFlowEdges);
 
 function parseNumbers(value, expected, label) {
   const parts = value.split(",").map(item => item.trim());
@@ -217,6 +381,13 @@ function formatModel(model) {
 function formatTransportModel(model) {
   objectivePreview.textContent = `Problema de transporte · ${model.oferta.length} orígenes · ${model.demanda.length} destinos`;
   constraintsPreview.innerHTML = `<div class="constraint-result">Oferta: [${model.oferta.map(formatNumber).join(", ")}]</div><div class="constraint-result">Demanda: [${model.demanda.map(formatNumber).join(", ")}]</div>`;
+}
+
+function formatAssignmentModel(model) {
+  objectivePreview.textContent = `KUHN-MUNKRES · minimizar costo · ${model.costos.length} trabajador(es) · ${model.costos[0].length} tarea(s)`;
+  constraintsPreview.innerHTML = `
+    <div class="constraint-result">1. Normalizar la matriz a formato cuadrado con costos ficticios 0 si hace falta.</div>
+    <div class="constraint-result">2. Reducir filas y columnas; cubrir ceros y ajustar hasta hallar ceros independientes.</div>`;
 }
 
 function renderAllocationTable(solution, result) {
@@ -488,8 +659,11 @@ async function solve() {
   solveBtn.disabled = true;
   solveBtn.textContent = "Resolviendo...";
   try {
-    const model = selectedMethod === "transporte" ? collectTransportModel() : collectModel();
-    selectedMethod === "transporte" ? formatTransportModel(model) : formatModel(model);
+    const model = selectedMethod === "transporte" ? collectTransportModel() : selectedMethod === "asignacion" ? collectAssignmentModel() : selectedMethod === "flujoMaximo" || selectedMethod === "flujoCostoMinimo" ? collectFlowModel() : collectModel();
+    if (selectedMethod === "transporte") formatTransportModel(model);
+    else if (selectedMethod === "asignacion") formatAssignmentModel(model);
+    else if (selectedMethod === "flujoMaximo" || selectedMethod === "flujoCostoMinimo") formatFlowModel(model);
+    else formatModel(model);
     if (selectedMethod === "grafico" && model.objetivo.length !== 2) {
       throw new Error("El método gráfico requiere exactamente dos variables.");
     }
@@ -505,6 +679,8 @@ async function solve() {
     if (selectedMethod === "dualidad") renderDualResult(data);
     else if (selectedMethod === "grafico") renderGraphicResult(data, model);
     else if (selectedMethod === "transporte") renderTransportResult(data);
+    else if (selectedMethod === "asignacion") renderAssignmentResult(data);
+    else if (selectedMethod === "flujoMaximo" || selectedMethod === "flujoCostoMinimo") renderFlowResult(data);
     else renderSimplexResult(data);
     await setResultsVisible(true);
   } catch (error) {
@@ -568,7 +744,16 @@ clearEntry.addEventListener("click", () => {
   constraintCount.value = "2";
   originCount.value = "3";
   destinationCount.value = "4";
+  assignmentRowCount.value = "3";
+  assignmentColumnCount.value = "3";
+  flowNodeCount.value = "4";
+  flowEdgeCount.value = "5";
+  flowSource.value = "1";
+  flowSink.value = "4";
+  flowDemand.value = "10";
   renderTransportMatrix();
+  renderAssignmentMatrix();
+  renderFlowEdges();
   renderConstraintEditor();
   setResultsVisible(false);
   formError.textContent = "";
@@ -582,6 +767,8 @@ async function resetCalculator(clearEverything = true) {
 resetBtn.addEventListener("click", () => resetCalculator(true));
 renderConstraintEditor();
 renderTransportMatrix();
+renderAssignmentMatrix();
+renderFlowEdges();
 
 function showToast(message) {
   toast.textContent = message;

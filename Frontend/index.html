@@ -19,14 +19,28 @@
   </script>
   <style>
     #calculator.transport-mode { width: min(100%, var(--transport-width, 760px)); max-width: min(100%, var(--transport-width, 760px)); }
+    #calculator.assignment-mode { width: min(100%, var(--assignment-width, 760px)); max-width: min(100%, var(--assignment-width, 760px)); }
+    #calculator.flow-mode { width: min(100%, var(--flow-width, 760px)); max-width: min(100%, var(--flow-width, 760px)); }
     #transportMatrix table { table-layout: fixed; }
     #transportMatrix th, #transportMatrix td { min-width: 0; }
     #transportMatrix input { box-sizing: border-box; min-width: 0; width: 100%; }
+    #assignmentMatrix { overflow-x: auto; }
+    #assignmentMatrix table { width: max(100%, var(--assignment-width, 420px)); min-width: var(--assignment-width, 420px); table-layout: auto; }
+    #assignmentMatrix th, #assignmentMatrix td { min-width: 0; }
+    #assignmentMatrix input { box-sizing: border-box; min-width: 0; width: 100%; }
     @media (max-width: 640px) {
       #calculator.transport-mode { width: 100%; max-width: 100%; }
+      #calculator.assignment-mode { width: 100%; max-width: 100%; }
+      #calculator.flow-mode { width: 100%; max-width: 100%; }
       #transportMatrix { margin-inline: -.25rem; padding-inline: .25rem; }
       #transportMatrix th, #transportMatrix td { padding: .125rem; }
       #transportMatrix input { padding-inline: .25rem; font-size: .7rem; }
+      #assignmentMatrix { margin-inline: -.25rem; padding-inline: .25rem; }
+      #assignmentMatrix table { min-width: 360px; }
+      #assignmentMatrix th, #assignmentMatrix td { padding: .125rem; }
+      #assignmentMatrix input { padding-inline: .25rem; font-size: .7rem; }
+      #flowEdges { margin-inline: -.25rem; padding-inline: .25rem; }
+      #flowEdges input { min-width: 0; padding-inline: .25rem; font-size: .7rem; }
     }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">

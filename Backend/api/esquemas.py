@@ -122,3 +122,29 @@ class TransporteSalida(BaseModel):
     costos: list[list[float]]
     soluciones: list[SolucionTransporteSalida]
     mensaje: str
+
+
+class AsignacionEntrada(BaseModel):
+    costos: list[list[float]] = Field(min_length=1, max_length=20)
+
+    @model_validator(mode="after")
+    def validar_matriz(self):
+        if not self.costos or not self.costos[0]:
+            raise ValueError("La matriz de costos no puede estar vacía.")
+        if any(len(fila) != len(self.costos[0]) for fila in self.costos):
+            raise ValueError("Todas las filas deben tener la misma cantidad de costos.")
+        return self
+
+
+class PasoAsignacionSalida(BaseModel):
+    titulo: str
+    detalle: str
+    matriz: list[list[float]] | None = None
+    asignaciones: list[list[int]] | None = None
+
+
+class AsignacionSalida(BaseModel):
+    costos: list[list[float]]
+    asignaciones: list[dict[str, int | float]]
+    costo_total: float
+    pasos: list[PasoAsignacionSalida]
