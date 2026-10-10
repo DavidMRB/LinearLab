@@ -13,26 +13,29 @@ const methodStyles = {
   dualidad: "bg-ink text-white",
   simplexRevisado: "bg-steel text-white",
   grafico: "bg-[#DCEFE7] text-[#50856E]",
-  transporte: "bg-[#F3E8D4] text-[#9A6E32]"
+  transporte: "bg-[#F3E8D4] text-[#9A6E32]",
+  asignacion: "bg-[#E8DDF4] text-[#76539A]",
+  flujoMaximo: "bg-[#D9EEF0] text-[#357B83]",
+  flujoCostoMinimo: "bg-[#F4E1D5] text-[#A35D3B]"
 };
 
 const methods = Object.values(methodData);
 
 function methodCards() {
   return methods.map(({ id, icon, name, description }) => `
-    <button class="method-card group flex min-h-60 flex-wrap content-between gap-5 rounded-3xl border border-ink/10 bg-white/75 p-7 text-left shadow-sm transition hover:-translate-y-1.5 hover:border-steel hover:shadow-2xl" data-method="${id}">
-      <div class="grid size-[72px] place-items-center rounded-3xl ${methodStyles[id]} text-3xl font-bold"><span>${icon}</span></div>
-      <div class="basis-[calc(100%-100px)] pt-1"><h2 class="mb-2 text-xl font-bold">${name}</h2><p class="text-sm leading-6 text-[#597081]">${description}</p></div>
-      <div class="ml-auto text-3xl text-steel transition group-hover:translate-x-1.5">→</div>
+    <button class="method-card group flex min-h-[218px] flex-col items-start gap-4 rounded-3xl border border-ink/10 bg-white/75 p-5 text-left shadow-sm transition hover:-translate-y-1.5 hover:border-steel hover:shadow-2xl sm:p-6" data-method="${id}">
+      <div class="grid size-14 shrink-0 place-items-center rounded-2xl ${methodStyles[id]} text-2xl font-bold"><span>${icon}</span></div>
+      <div class="flex-1"><h2 class="mb-2 text-lg font-bold leading-tight">${name}</h2><p class="text-[13px] leading-5 text-[#597081]">${description}</p></div>
+      <div class="self-end text-2xl text-steel transition group-hover:translate-x-1.5">→</div>
     </button>`).join("");
 }
 
 function methodOptions() {
   return methods.map(({ id, icon, name, description }) => `
-    <button class="workspace-option flex w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-mist" data-method="${id}">
-      <div class="grid size-10 place-items-center rounded-xl ${methodStyles[id]} text-sm font-extrabold">${icon}</div>
-      <div><strong class="block text-[13px]">${name}</strong><small class="mt-1 block text-[11px] text-[#597081]">${description}</small></div>
-      <span class="option-check ml-auto text-steel opacity-0">✓</span>
+    <button class="workspace-option group relative flex min-h-[112px] min-w-0 flex-col items-center justify-start gap-2 rounded-2xl px-2 py-3 text-center transition hover:bg-mist" data-method="${id}" title="${description}">
+      <div class="grid size-12 shrink-0 place-items-center rounded-2xl ${methodStyles[id]} text-base font-extrabold transition group-hover:scale-105">${icon}</div>
+      <strong class="line-clamp-2 text-[12px] leading-4">${name}</strong>
+      <span class="option-check absolute right-2 top-2 text-xs font-bold text-steel opacity-0">✓</span>
     </button>`).join("");
 }
 
@@ -40,11 +43,11 @@ export function renderLayout() {
   document.getElementById("app").innerHTML = `
     <section id="welcomeScreen" class="relative flex min-h-screen flex-col bg-[linear-gradient(90deg,rgba(169,206,244,.18)_1px,transparent_1px),linear-gradient(rgba(169,206,244,.12)_1px,transparent_1px),#F6F8FA] bg-[length:42px_42px] px-6 py-8 sm:px-12 lg:px-28">
       ${logo}
-      <div class="mx-auto my-auto w-full max-w-5xl py-16">
+      <div class="mx-auto my-auto w-full max-w-[1500px] py-12 lg:py-16">
         <p class="mb-4 text-[11px] font-extrabold tracking-[2px] text-steel">CALCULADORA DE PROGRAMACIÓN LINEAL</p>
         <h1 class="max-w-3xl text-5xl font-extrabold leading-tight tracking-tight sm:text-7xl">Selecciona un<br><span class="text-steel">método de resolución</span></h1>
         <p class="my-7 max-w-2xl text-base leading-8 text-[#597081] sm:text-lg">Elige el método que deseas utilizar para resolver tu problema de programación lineal.</p>
-        <div class="grid gap-5 md:grid-cols-2">${methodCards()}</div>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">${methodCards()}</div>
       </div>
       <div class="absolute bottom-0 left-0 h-2 w-full bg-[linear-gradient(90deg,#A9CEF4_0_20%,#36494E_20%_40%,#000_40%_60%,#7EA0B7_60%_80%,#597081_80%)]"></div>
     </section>
@@ -55,8 +58,9 @@ export function renderLayout() {
         <div class="ml-auto flex items-center gap-2 short:gap-1">
           <div class="relative">
             <button id="currentMethod" class="flex items-center gap-2 rounded-2xl border border-ink/10 bg-white px-4 py-2.5 font-bold shadow-lg shadow-ink/5 short:px-3 short:py-2"><span id="currentMethodIcon" class="grid size-7 place-items-center rounded-lg bg-ice text-ink">Σ</span><span id="currentMethodText">Método</span><span class="text-steel">⌄</span></button>
-            <div id="methodMenu" class="pointer-events-none absolute left-1/2 top-[calc(100%+12px)] z-10 w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-2 scale-95 rounded-3xl border border-ink/10 bg-white/95 p-3 opacity-0 shadow-2xl transition [&.show]:pointer-events-auto [&.show]:translate-y-0 [&.show]:scale-100 [&.show]:opacity-100">
-              <div class="px-2 pb-3 pt-2 text-[11px] font-extrabold tracking-widest text-steel">MÉTODOS DISPONIBLES</div>${methodOptions()}
+            <div id="methodMenu" class="pointer-events-none absolute right-0 top-[calc(100%+12px)] z-10 w-[min(30rem,calc(100vw-2rem))] -translate-y-2 scale-95 rounded-[28px] border border-ink/10 bg-white/95 p-4 opacity-0 shadow-2xl backdrop-blur transition [&.show]:pointer-events-auto [&.show]:translate-y-0 [&.show]:scale-100 [&.show]:opacity-100 sm:p-5">
+              <div class="px-2 pb-4 pt-1 text-[11px] font-extrabold tracking-[1.5px] text-steel">MÉTODOS DISPONIBLES</div>
+              <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">${methodOptions()}</div>
             </div>
           </div>
           <button id="resetBtn" class="rounded-xl px-4 py-2.5 font-bold text-[#597081] transition hover:bg-[#597081]/10 short:px-2" title="Nuevo ejercicio">↺ <span class="hidden sm:inline">Nuevo ejercicio</span></button>
@@ -83,12 +87,28 @@ function resultsTemplate() {
 }
 
 function calculatorTemplate() {
-  return `<section id="calculator" class="w-full min-w-0 max-w-[470px] self-center overflow-visible rounded-[31px] border border-ink/10 bg-white/90 p-4 shadow-2xl transition-[max-width,transform] duration-700 ease-[cubic-bezier(.22,.8,.25,1)] sm:p-6 lg:self-auto lg:[.show-results_&]:max-w-[420px] short:p-3 short:lg:max-h-none short:lg:overflow-visible">
+  return `<section id="calculator" class="max-h-[calc(100svh-7rem)] w-full min-w-0 max-w-[470px] self-center overflow-y-auto overflow-x-hidden rounded-[31px] border border-ink/10 bg-white/90 p-4 shadow-2xl transition-[max-width,transform] duration-700 ease-[cubic-bezier(.22,.8,.25,1)] sm:p-6 lg:max-h-none lg:overflow-visible lg:self-auto lg:[.show-results_&]:max-w-[420px] short:p-3 short:lg:max-h-none short:lg:overflow-visible">
     <div class="flex items-center justify-between px-1 pb-5 short:pb-3"><div><p class="mb-1 text-[10px] font-extrabold tracking-widest text-steel">ENTRADA DEL PROBLEMA</p><h2 id="calcTitle" class="text-lg font-bold">Método Simplex</h2></div><div class="size-3 rounded-full bg-[#7EB7A4] shadow-[0_0_0_5px_rgba(126,183,164,.13)]"></div></div>
     <div id="objectiveMode" class="grid grid-cols-[1fr_1fr_.7fr] gap-2 py-3 short:gap-1 short:py-2"><button class="mode rounded-xl bg-ice py-3 text-xs font-extrabold text-ink" data-mode="max">MAX</button><button class="mode rounded-xl bg-mist py-3 text-xs font-extrabold text-[#597081]" data-mode="min">MIN</button><button class="clear-entry rounded-xl bg-[#F8EEEE] py-3 text-xs font-extrabold text-[#9A4E4E]" id="clearEntry">AC</button></div>
     <div id="standardEditor" class="grid gap-2 short:gap-1"><label class="text-[11px] font-extrabold text-[#597081]" for="variableCount">Cantidad de variables</label><input id="variableCount" class="w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="1" max="20" value="2"><label class="mt-2 text-[11px] font-extrabold text-[#597081]" for="objectiveCoefficients">Coeficientes de Z</label><input id="objectiveCoefficients" class="w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="text" value="3,5" placeholder="Ejemplo: 3,5"><p class="-mt-1 mb-1 text-[11px] text-[#597081]">Escríbelos en orden: x1, x2, x3...</p><label class="text-[11px] font-extrabold text-[#597081]" for="constraintCount">Cantidad de restricciones</label><input id="constraintCount" class="w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="1" max="20" value="2"></div>
     <div id="constraintEditor" class="mt-5 grid max-h-80 gap-2 overflow-y-auto pr-1"></div>
     <div id="transportEditor" class="mt-5 hidden grid gap-3"><div class="grid grid-cols-2 gap-2"><label class="text-[11px] font-extrabold text-[#597081]">Orígenes<input id="originCount" class="mt-1 w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="1" max="10" value="3"></label><label class="text-[11px] font-extrabold text-[#597081]">Destinos<input id="destinationCount" class="mt-1 w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="1" max="10" value="4"></label></div><div id="transportMatrix" class="rounded-2xl border border-ink/10 bg-mist/50 p-2"></div><p class="text-[11px] text-[#597081]">Ingresa costos, oferta y demanda.</p></div>
+    <div id="assignmentEditor" class="mt-5 hidden grid gap-3">
+      <div class="rounded-2xl border border-[#D9C8EC] bg-[#F8F4FC] p-3 text-xs leading-5 text-[#76539A]">
+        <strong class="block">Objetivo: minimizar el costo total</strong>
+        <span>Kuhn-Munkres requiere una matriz de costos. Puede ser cuadrada o rectangular; las celdas ficticias se agregan automáticamente.</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2"><label class="text-[11px] font-extrabold text-[#597081]">Trabajadores<input id="assignmentRowCount" class="mt-1 w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="1" max="20" value="3"></label><label class="text-[11px] font-extrabold text-[#597081]">Tareas<input id="assignmentColumnCount" class="mt-1 w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="1" max="20" value="3"></label></div>
+      <div id="assignmentMatrix" class="rounded-2xl border border-ink/10 bg-mist/50 p-2"></div>
+      <p class="text-[11px] text-[#597081]">Cada celda representa el costo de asignar un trabajador a una tarea. Usa valores no negativos.</p>
+    </div>
+    <div id="flowEditor" class="mt-5 hidden grid gap-3">
+      <div class="grid grid-cols-2 gap-2"><label class="text-[11px] font-extrabold text-[#597081]">Nodos<input id="flowNodeCount" class="mt-1 w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="2" max="20" value="4"></label><label class="text-[11px] font-extrabold text-[#597081]">Aristas<input id="flowEdgeCount" class="mt-1 w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="1" max="40" value="5"></label></div>
+      <div class="grid grid-cols-2 gap-2"><label class="text-[11px] font-extrabold text-[#597081]">Origen<input id="flowSource" class="mt-1 w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="1" value="1"></label><label class="text-[11px] font-extrabold text-[#597081]">Destino<input id="flowSink" class="mt-1 w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="1" value="4"></label></div>
+      <label id="flowDemandLabel" class="text-[11px] font-extrabold text-[#597081]">Flujo requerido<input id="flowDemand" class="mt-1 w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="0" step="any" value="10"></label>
+      <div id="flowEdges" class="grid max-h-64 gap-2 overflow-y-auto pr-1"></div>
+      <p class="text-[11px] text-[#597081]">Cada arista se define como origen, destino, capacidad y costo.</p>
+    </div>
     <div class="mt-3 grid grid-cols-2 gap-2"><button id="addConstraint" class="rounded-xl bg-ice py-3 text-xs font-extrabold text-ink" type="button">Actualizar campos</button><button id="solveBtn" class="rounded-xl bg-ink py-3 text-xs font-extrabold text-white" type="button">Resolver <span>→</span></button></div><p id="formError" class="min-h-5 mt-3 text-xs leading-5 text-[#9A4E4E]" role="alert"></p>
   </section>`;
 }

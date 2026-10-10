@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from Backend.dualidad import construir_dual, resolver_con_dualidad
+from Backend.asignacion import resolver_asignacion
+from Backend.flujo import resolver_flujo_costo_minimo, resolver_flujo_maximo
 from Backend.grafico import resolver_grafico
 from Backend.transporte import resolver_transporte
 from Backend.modelos import ProblemaLineal, Restriccion
@@ -17,7 +19,10 @@ from Backend.api.esquemas import (
     ResultadoSalida,
     TransporteEntrada,
     TransporteSalida,
+    AsignacionEntrada,
+    AsignacionSalida,
 )
+from Backend.api.esquemas_flujo import FlujoEntrada, FlujoSalida
 
 load_dotenv()
 
@@ -187,5 +192,52 @@ def resolver_transporte_api(entrada: TransporteEntrada):
             }
             for solucion in resultado.soluciones
         ],
+        mensaje=resultado.mensaje,
+    )
+
+
+@app.post("/api/asignacion/resolver", response_model=AsignacionSalida)
+def resolver_asignacion_api(entrada: AsignacionEntrada):
+    resultado = resolver_asignacion(entrada.costos)
+    return AsignacionSalida(
+        costos=resultado.costos,
+        asignaciones=resultado.asignaciones,
+        costo_total=resultado.costo_total,
+        pasos=[
+            {
+                "titulo": paso.titulo,
+                "detalle": paso.detalle,
+                "matriz": paso.matriz,
+                "asignaciones": paso.asignaciones,
+            }
+            for paso in resultado.pasos
+        ],
+    )
+
+
+@app.post("/api/flujo-maximo/resolver", response_model=FlujoSalida)
+def resolver_flujo_maximo_api(entrada: FlujoEntrada):
+    resultado = resolver_flujo_maximo(
+        entrada.nodos, entrada.origen, entrada.destino,
+        [arista.model_dump() for arista in entrada.aristas],
+    )
+    return FlujoSalida(
+        flujo=resultado.flujo, costo_total=resultado.costo_total, flujos=resultado.flujos,
+        pasos=[{"titulo": paso.titulo, "detalle": paso.detalle, "estado": paso.estado} for paso in resultado.pasos],
+        mensaje=resultado.mensaje,
+    )
+
+
+@app.post("/api/flujo-costo-minimo/resolver", response_model=FlujoSalida)
+def resolver_flujo_costo_minimo_api(entrada: FlujoEntrada):
+    if entrada.flujo_requerido is None:
+        raise HTTPException(status_code=422, detail="El flujo requerido es obligatorio para este método.")
+    resultado = resolver_flujo_costo_minimo(
+        entrada.nodos, entrada.origen, entrada.destino,
+        [arista.model_dump() for arista in entrada.aristas], entrada.flujo_requerido,
+    )
+    return FlujoSalida(
+        flujo=resultado.flujo, costo_total=resultado.costo_total, flujos=resultado.flujos,
+        pasos=[{"titulo": paso.titulo, "detalle": paso.detalle, "estado": paso.estado} for paso in resultado.pasos],
         mensaje=resultado.mensaje,
     )
