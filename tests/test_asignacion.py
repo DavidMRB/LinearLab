@@ -30,3 +30,14 @@ def test_kuhn_munkres_resuelve_matriz_rectangular():
 
     assert resultado.costo_total == costo_por_fuerza_bruta(costos)
     assert len(resultado.asignaciones) == len(costos)
+
+
+def test_kuhn_munkres_acepta_asignaciones_prohibidas():
+    costos = [[1, "X", 4], [2, 3, "X"], ["X", 1, 2]]
+
+    resultado = resolver_asignacion(costos)
+
+    assert resultado.costo_total == 6
+    assert {(item["fila"], item["columna"]) for item in resultado.asignaciones} == {(0, 0), (1, 1), (2, 2)}
+    assert resultado.costos[0][1] == "∞"
+    assert any(paso.matriz and paso.matriz[0][1] == "∞" for paso in resultado.pasos)

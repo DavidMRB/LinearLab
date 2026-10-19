@@ -198,7 +198,10 @@ def resolver_transporte_api(entrada: TransporteEntrada):
 
 @app.post("/api/asignacion/resolver", response_model=AsignacionSalida)
 def resolver_asignacion_api(entrada: AsignacionEntrada):
-    resultado = resolver_asignacion(entrada.costos)
+    try:
+        resultado = resolver_asignacion(entrada.costos)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
     return AsignacionSalida(
         costos=resultado.costos,
         asignaciones=resultado.asignaciones,

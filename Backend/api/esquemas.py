@@ -125,7 +125,7 @@ class TransporteSalida(BaseModel):
 
 
 class AsignacionEntrada(BaseModel):
-    costos: list[list[float]] = Field(min_length=1, max_length=20)
+    costos: list[list[float | str]] = Field(min_length=1, max_length=20)
 
     @model_validator(mode="after")
     def validar_matriz(self):
@@ -139,12 +139,12 @@ class AsignacionEntrada(BaseModel):
 class PasoAsignacionSalida(BaseModel):
     titulo: str
     detalle: str
-    matriz: list[list[float]] | None = None
+    matriz: list[list[float | str]] | None = None
     asignaciones: list[list[int]] | None = None
 
 
 class AsignacionSalida(BaseModel):
-    costos: list[list[float]]
+    costos: list[list[float | str]]
     asignaciones: list[dict[str, int | float]]
     costo_total: float
     pasos: list[PasoAsignacionSalida]

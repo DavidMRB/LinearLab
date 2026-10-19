@@ -100,7 +100,7 @@ function calculatorTemplate() {
       </div>
       <div class="grid grid-cols-2 gap-2"><label class="text-[11px] font-extrabold text-[#597081]">Trabajadores<input id="assignmentRowCount" class="mt-1 w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="1" max="20" value="3"></label><label class="text-[11px] font-extrabold text-[#597081]">Tareas<input id="assignmentColumnCount" class="mt-1 w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="1" max="20" value="3"></label></div>
       <div id="assignmentMatrix" class="rounded-2xl border border-ink/10 bg-mist/50 p-2"></div>
-      <p class="text-[11px] text-[#597081]">Cada celda representa el costo de asignar un trabajador a una tarea. Usa valores no negativos.</p>
+      <p class="text-[11px] text-[#597081]">Cada celda representa un costo no negativo. Escribe <strong>X</strong> para prohibir una asignación; se mostrará como ∞ en el procedimiento y los resultados.</p>
     </div>
     <div id="flowEditor" class="mt-5 hidden grid gap-3">
       <div class="grid grid-cols-2 gap-2"><label class="text-[11px] font-extrabold text-[#597081]">Nodos<input id="flowNodeCount" class="mt-1 w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="2" max="20" value="4"></label><label class="text-[11px] font-extrabold text-[#597081]">Aristas<input id="flowEdgeCount" class="mt-1 w-full rounded-xl border border-ink/10 bg-[#F8FAFB] px-3 py-2.5 text-sm" type="number" min="1" max="40" value="5"></label></div>

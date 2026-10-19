@@ -106,7 +106,9 @@ function collectAssignmentModel() {
     if (!input) {
       throw new Error("Actualiza la matriz antes de resolver el problema de asignación.");
     }
-    return parseTerm(input.value, `El costo del trabajador ${i + 1} y tarea ${j + 1}`);
+    const value = input.value.trim();
+    if (value.toUpperCase() === "X") return "X";
+    return parseTerm(value, `El costo del trabajador ${i + 1} y tarea ${j + 1}`);
   }));
   return { costos };
 }
@@ -205,7 +207,7 @@ function renderAssignmentResult(result) {
   const renderAssignmentMatrix = (matrix, assignments = []) => {
     if (!matrix) return "";
     const selected = new Set((assignments || []).map(([worker, column]) => `${worker}-${column}`));
-    return `<div class="mt-3 overflow-x-auto"><table class="w-full min-w-[420px] border-collapse font-mono text-[11px]"><thead><tr><th class="border border-ink/10 bg-ink px-2 py-1.5 text-left text-white">Trabajador</th>${matrix[0].map((_, column) => `<th class="border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">T${column + 1}</th>`).join("")}</tr></thead><tbody>${matrix.map((row, worker) => `<tr><th class="border border-ink/10 bg-mist px-2 py-1.5 text-left">Trabajador ${worker + 1}</th>${row.map((value, column) => `<td class="border border-ink/10 px-2 py-1.5 text-right${selected.has(`${worker}-${column}`) ? " bg-ice font-bold" : ""}">${formatNumber(value)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    return `<div class="mt-3 overflow-x-auto"><table class="w-full min-w-[420px] border-collapse font-mono text-[11px]"><thead><tr><th class="border border-ink/10 bg-ink px-2 py-1.5 text-left text-white">Trabajador</th>${matrix[0].map((_, column) => `<th class="border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">T${column + 1}</th>`).join("")}</tr></thead><tbody>${matrix.map((row, worker) => `<tr><th class="border border-ink/10 bg-mist px-2 py-1.5 text-left">Trabajador ${worker + 1}</th>${row.map((value, column) => `<td class="border border-ink/10 px-2 py-1.5 text-right${selected.has(`${worker}-${column}`) ? " bg-ice font-bold" : ""}">${value === "∞" ? "∞" : formatNumber(value)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
   };
   stepsOutput.innerHTML = result.pasos.map((step, index) => `
     <article class="rounded-xl border-l-4 border-steel bg-[#F6F9FA] p-4 text-sm leading-6">
@@ -217,6 +219,8 @@ function renderAssignmentResult(result) {
     <article class="rounded-xl border border-ink/10 bg-mist p-4">
       <h4 class="mb-2 text-sm font-bold">Asignación óptima</h4>
       <div class="grid gap-2 font-mono text-xs">${result.asignaciones.map(item => `<div>Trabajador ${item.fila + 1} → Tarea ${item.columna + 1} · costo ${formatNumber(item.costo)}</div>`).join("")}</div>
+      <h4 class="mb-2 mt-4 text-sm font-bold">Matriz de costos</h4>
+      ${renderAssignmentMatrix(result.costos)}
     </article>
   `;
   finalAnswer.textContent = `Costo mínimo: ${formatNumber(result.costo_total)}`;
@@ -251,7 +255,7 @@ function renderAssignmentMatrix() {
     <table class="w-full border-collapse text-xs">
       <thead><tr><th class="p-2 text-left">Costo</th>${Array.from({ length: columns }, (_, j) => `<th class="p-2">T${j + 1}</th>`).join("")}</tr></thead>
       <tbody>${Array.from({ length: rows }, (_, i) => `
-        <tr><th class="p-1 text-left">Trabajador ${i + 1}</th>${Array.from({ length: columns }, (_, j) => `<td class="p-1"><input class="assignment-cost w-16 rounded-lg border border-ink/10 bg-white px-2 py-2 text-center" type="number" min="0" step="any" value="${i === j ? 2 : 5}" data-assignment-row="${i}" data-assignment-column="${j}" aria-label="Costo trabajador ${i + 1} tarea ${j + 1}"></td>`).join("")}</tr>
+        <tr><th class="p-1 text-left">Trabajador ${i + 1}</th>${Array.from({ length: columns }, (_, j) => `<td class="p-1"><input class="assignment-cost w-16 rounded-lg border border-ink/10 bg-white px-2 py-2 text-center" type="text" inputmode="decimal" placeholder="X" value="${i === j ? 2 : 5}" data-assignment-row="${i}" data-assignment-column="${j}" aria-label="Costo trabajador ${i + 1} tarea ${j + 1}"></td>`).join("")}</tr>
       `).join("")}</tbody>
     </table>
   `;
