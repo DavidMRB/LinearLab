@@ -207,7 +207,7 @@ function renderAssignmentResult(result) {
   const renderAssignmentMatrix = (matrix, assignments = []) => {
     if (!matrix) return "";
     const selected = new Set((assignments || []).map(([worker, column]) => `${worker}-${column}`));
-    return `<div class="mt-3 overflow-x-auto"><table class="w-full min-w-[420px] border-collapse font-mono text-[11px]"><thead><tr><th class="border border-ink/10 bg-ink px-2 py-1.5 text-left text-white">Trabajador</th>${matrix[0].map((_, column) => `<th class="border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">T${column + 1}</th>`).join("")}</tr></thead><tbody>${matrix.map((row, worker) => `<tr><th class="border border-ink/10 bg-mist px-2 py-1.5 text-left">Trabajador ${worker + 1}</th>${row.map((value, column) => `<td class="border border-ink/10 px-2 py-1.5 text-right${selected.has(`${worker}-${column}`) ? " bg-ice font-bold" : ""}">${value === "∞" ? "∞" : formatNumber(value)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    return `<div class="mt-3 overflow-x-auto"><table class="w-full border-collapse font-mono text-[11px] sm:min-w-[420px]"><thead><tr><th class="border border-ink/10 bg-ink px-2 py-1.5 text-left text-white"><span class="sm:hidden">Trab.</span><span class="hidden sm:inline">Trabajador</span></th>${matrix[0].map((_, column) => `<th class="border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">T${column + 1}</th>`).join("")}</tr></thead><tbody>${matrix.map((row, worker) => `<tr><th class="whitespace-nowrap border border-ink/10 bg-mist px-2 py-1.5 text-left"><span class="sm:hidden">Trab. ${worker + 1}</span><span class="hidden sm:inline">Trabajador ${worker + 1}</span></th>${row.map((value, column) => `<td class="border border-ink/10 px-2 py-1.5 text-right${selected.has(`${worker}-${column}`) ? " bg-ice font-bold" : ""}">${value === "∞" ? "∞" : formatNumber(value)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
   };
   stepsOutput.innerHTML = result.pasos.map((step, index) => `
     <article class="rounded-xl border-l-4 border-steel bg-[#F6F9FA] p-4 text-sm leading-6">
@@ -239,7 +239,7 @@ function renderTransportMatrix() {
       <tbody>${Array.from({ length: origins }, (_, i) => `
         <tr><th class="p-1 text-left">O${i + 1}</th>${Array.from({ length: destinations }, (_, j) => `<td class="p-1"><input class="transport-cost w-16 rounded-lg border border-ink/10 bg-white px-2 py-2 text-center" type="number" min="0" step="any" value="${i === j ? 2 : 5}" data-origin="${i}" data-destination="${j}" aria-label="Costo O${i + 1} D${j + 1}"></td>`).join("")}<td class="p-1"><input class="transport-supply w-20 rounded-lg border border-ink/10 bg-white px-2 py-2 text-center" type="number" min="0" step="any" value="20" data-origin="${i}" aria-label="Oferta O${i + 1}"></td></tr>
       `).join("")}</tbody>
-      <tfoot><tr><th class="p-2 text-left">Demanda</th>${Array.from({ length: destinations }, (_, j) => `<td class="p-1"><input class="transport-demand w-20 rounded-lg border border-ink/10 bg-white px-2 py-2 text-center" type="number" min="0" step="any" value="15" data-destination="${j}" aria-label="Demanda D${j + 1}"></td>`).join("")}<td></td></tr></tfoot>
+      <tfoot><tr><th class="p-2 text-left"><span class="sm:hidden">Dem.</span><span class="hidden sm:inline">Demanda</span></th>${Array.from({ length: destinations }, (_, j) => `<td class="p-1"><input class="transport-demand w-20 rounded-lg border border-ink/10 bg-white px-2 py-2 text-center" type="number" min="0" step="any" value="15" data-destination="${j}" aria-label="Demanda D${j + 1}"></td>`).join("")}<td></td></tr></tfoot>
     </table>
   `;
 }
@@ -268,16 +268,16 @@ function renderFlowEdges() {
   calculator.style.setProperty("--flow-width", `${Math.min(820, Math.max(470, 330 + nodes * 18))}px`);
   flowEdges.innerHTML = Array.from({ length: count }, (_, index) => `
     <div class="flow-edge grid grid-cols-2 gap-2 rounded-xl border border-ink/10 bg-mist/50 p-2 sm:grid-cols-4">
-      <label class="flow-field text-[10px] font-extrabold text-[#597081]">Desde
+      <label class="flow-field text-[11px] font-extrabold text-[#597081]">Desde
         <input class="flow-from mt-1 w-full rounded-lg border border-ink/10 bg-white px-2 py-2 text-center text-xs" type="number" min="1" max="${nodes}" value="${index % nodes + 1}" aria-label="Origen de arista ${index + 1}">
       </label>
-      <label class="flow-field text-[10px] font-extrabold text-[#597081]">Hasta
+      <label class="flow-field text-[11px] font-extrabold text-[#597081]">Hasta
         <input class="flow-to mt-1 w-full rounded-lg border border-ink/10 bg-white px-2 py-2 text-center text-xs" type="number" min="1" max="${nodes}" value="${(index + 1) % nodes + 1}" aria-label="Destino de arista ${index + 1}">
       </label>
-      <label class="flow-field text-[10px] font-extrabold text-[#597081]">Capacidad
+      <label class="flow-field text-[11px] font-extrabold text-[#597081]">Capacidad
         <input class="flow-capacity mt-1 w-full rounded-lg border border-ink/10 bg-white px-2 py-2 text-center text-xs" type="number" min="0" step="any" value="10" aria-label="Capacidad de arista ${index + 1}">
       </label>
-      <label class="flow-field text-[10px] font-extrabold text-[#597081]">Costo
+      <label class="flow-field text-[11px] font-extrabold text-[#597081]">Costo
         <input class="flow-cost mt-1 w-full rounded-lg border border-ink/10 bg-white px-2 py-2 text-center text-xs" type="number" step="any" value="${index + 1}" aria-label="Costo de arista ${index + 1}">
       </label>
     </div>
@@ -294,7 +294,7 @@ function renderFlowResult(result) {
   stepsTitle.textContent = "3. Desarrollo paso a paso del algoritmo de flujo";
   const renderFlowState = state => !state?.length ? "" : `
     <div class="mt-3 overflow-x-auto">
-      <table class="w-full min-w-[440px] border-collapse font-mono text-[11px]">
+      <table class="w-full border-collapse font-mono text-[11px] sm:min-w-[440px]">
         <thead><tr><th class="border border-ink/10 bg-ink px-2 py-1.5 text-left text-white">Arista</th><th class="border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">Flujo</th><th class="border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">Capacidad</th>${selectedMethod === "flujoCostoMinimo" ? '<th class="border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">Costo</th>' : ""}</tr></thead>
         <tbody>${state.map(edge => `<tr><td class="border border-ink/10 px-2 py-1.5">N${edge.origen} → N${edge.destino}</td><td class="border border-ink/10 px-2 py-1.5 text-right">${formatNumber(edge.flujo)}</td><td class="border border-ink/10 px-2 py-1.5 text-right">${formatNumber(edge.capacidad)}</td>${selectedMethod === "flujoCostoMinimo" ? `<td class="border border-ink/10 px-2 py-1.5 text-right">${formatNumber(edge.costo)}</td>` : ""}</tr>`).join("")}</tbody>
       </table>
@@ -426,7 +426,7 @@ function renderTransportResult(result) {
 
 function sectionLabel(text) {
   // Sin "uppercase": las fórmulas distinguen mayúsculas (b vector vs. B matriz, y vs. Y).
-  return `<span class="mb-1 block text-[10px] font-semibold tracking-wide text-[#597081]">${text}</span>`;
+  return `<span class="mb-1 block text-[11px] font-semibold tracking-wide text-[#597081]">${text}</span>`;
 }
 
 function renderTablaCompleta(step) {
@@ -435,12 +435,12 @@ function renderTablaCompleta(step) {
 
 function renderVectorRow(labels, values, opts = {}) {
   const { highlightIndex = -1 } = opts;
-  return `<table class="w-full border-collapse font-mono text-[11px]"><thead><tr>${labels.map(label => `<th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">${label}</th>`).join("")}</tr></thead><tbody><tr>${values.map((value, index) => `<td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right${index === highlightIndex ? " bg-ice/60 font-semibold" : ""}">${formatNumber(value)}</td>`).join("")}</tr></tbody></table>`;
+  return `<div class="overflow-x-auto"><table class="w-full border-collapse font-mono text-[11px]"><thead><tr>${labels.map(label => `<th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">${label}</th>`).join("")}</tr></thead><tbody><tr>${values.map((value, index) => `<td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right${index === highlightIndex ? " bg-ice/60 font-semibold" : ""}">${formatNumber(value)}</td>`).join("")}</tr></tbody></table></div>`;
 }
 
 function renderMatrizB(rowLabels, matriz) {
   const colHeaders = matriz[0].map((_, index) => `F${index + 1}`);
-  return `<table class="w-full border-collapse font-mono text-[11px]"><thead><tr><th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white"></th>${colHeaders.map(header => `<th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">${header}</th>`).join("")}</tr></thead><tbody>${matriz.map((row, indice) => `<tr><th class="whitespace-nowrap border border-ink/10 bg-mist px-2 py-1.5 text-right text-ink">${rowLabels[indice]}</th>${row.map(value => `<td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${formatNumber(value)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  return `<div class="overflow-x-auto"><table class="w-full border-collapse font-mono text-[11px]"><thead><tr><th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white"></th>${colHeaders.map(header => `<th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">${header}</th>`).join("")}</tr></thead><tbody>${matriz.map((row, indice) => `<tr><th class="whitespace-nowrap border border-ink/10 bg-mist px-2 py-1.5 text-right text-ink">${rowLabels[indice]}</th>${row.map(value => `<td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${formatNumber(value)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 
 function renderSteps(result, title) {
@@ -450,7 +450,7 @@ function renderSteps(result, title) {
       <strong class="block text-base">${title}</strong>
       <span class="mt-1 block text-xs text-[#597081]">${result.mensaje}</span>
       ${values ? `<span class="mt-1 block font-mono text-xs">${values}</span>` : ""}
-      ${result.pasos.length ? `<span class="mt-2 block text-[11px] leading-4 text-[#597081]">Lectura de la tabla: la última fila contiene los costos reducidos c<sub>j</sub> − z<sub>j</sub> (entra la variable con el mayor valor positivo) y su celda LD es −Z en maximización (+Z en minimización, donde se maximiza −Z).</span>` : ""}
+      ${result.pasos.length ? `<span class="mt-2 block text-[11px] leading-4 text-[#597081]">Lectura de la tabla: la última fila contiene los costos reducidos cⱼ − zⱼ (entra la variable con el mayor valor positivo) y su celda LD es −Z en maximización (+Z en minimización, donde se maximiza −Z).</span>` : ""}
     </div>
     ${result.pasos.map(step => `
       <div class="mb-3 rounded-xl border-l-4 border-steel bg-[#F6F9FA] p-4 text-sm leading-6">
@@ -499,7 +499,7 @@ function renderStepsRevisado(result, title) {
             <span class="font-mono text-xs">{ ${step.base.join(", ")} }</span>
           </div>
 
-          <div class="mt-3 grid gap-3 md:grid-cols-2">
+          <div class="mt-3 grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
             <div>
               ${sectionLabel("c_B (costos de las variables básicas)")}
               ${renderVectorRow(step.base, step.cb)}
@@ -528,7 +528,7 @@ function renderStepsRevisado(result, title) {
           ${step.columna_pivote ? `
           <div class="mt-3">
             ${sectionLabel(`Columna entrante B⁻¹·A(${step.entra}) y prueba de razón mínima`)}
-            <table class="w-full border-collapse font-mono text-[11px]"><thead><tr>
+            <div class="overflow-x-auto"><table class="w-full border-collapse font-mono text-[11px]"><thead><tr>
               <th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">Básica</th>
               <th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">x_B</th>
               <th class="whitespace-nowrap border border-ink/10 bg-ink px-2 py-1.5 text-right text-white">B⁻¹·A(${step.entra})</th>
@@ -540,7 +540,7 @@ function renderStepsRevisado(result, title) {
                 const esSalida = fila === filaSaleIndice;
                 return `<tr class="${esSalida ? "bg-ice/60 font-semibold" : ""}"><td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${nombre}</td><td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${formatNumber(step.xb[fila])}</td><td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${formatNumber(direccion)}</td><td class="whitespace-nowrap border border-ink/10 px-2 py-1.5 text-right">${razon}</td></tr>`;
               }).join("")}
-            </tbody></table>
+            </tbody></table></div>
           </div>` : ""}
 
           <details class="mt-3">
@@ -720,6 +720,9 @@ async function solve() {
     else if (selectedMethod === "flujoMaximo" || selectedMethod === "flujoCostoMinimo") renderFlowResult(data);
     else renderSimplexResult(data);
     await setResultsVisible(true);
+    if (window.matchMedia("(max-width: 1279px)").matches) {
+      solutionPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   } catch (error) {
     formError.textContent = error.message || "No se pudo resolver el modelo.";
     // Evita mostrar el resultado de un cálculo anterior junto al modelo que falló.
@@ -731,6 +734,9 @@ async function solve() {
 }
 
 solveBtn.addEventListener("click", solve);
+document.getElementById("editDataBtn").addEventListener("click", () => {
+  calculator.scrollIntoView({ behavior: "smooth", block: "start" });
+});
 async function setResultsVisible(visible) {
   const before = calculator.getBoundingClientRect();
 
@@ -738,13 +744,13 @@ async function setResultsVisible(visible) {
     solutionPanel.classList.remove("hidden");
     solutionPanel.classList.remove("opacity-100");
     solutionPanel.classList.add("opacity-0");
-    workArea.classList.add("lg:flex-row", "lg:items-start", "lg:justify-start", "show-results");
-    calculator.classList.add("lg:max-w-[420px]");
+    workArea.classList.add("xl:flex-row", "xl:items-start", "xl:justify-start", "show-results");
+    calculator.classList.add("xl:max-w-[420px]");
   } else {
     solutionPanel.classList.add("hidden");
     solutionPanel.classList.remove("opacity-100");
-    workArea.classList.remove("lg:flex-row", "lg:items-start", "lg:justify-start", "show-results");
-    calculator.classList.remove("lg:max-w-[420px]");
+    workArea.classList.remove("xl:flex-row", "xl:items-start", "xl:justify-start", "show-results");
+    calculator.classList.remove("xl:max-w-[420px]");
   }
 
   await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
