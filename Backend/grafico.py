@@ -50,9 +50,13 @@ def _satisface(problema: ProblemaLineal, x: float, y: float) -> bool:
 def _agregar_candidato(candidatos: list[tuple[float, float]], x: float, y: float) -> None:
     if not isfinite(x) or not isfinite(y):
         return
+    # Un punto fuera del primer cuadrante no puede ser vertice de la region factible.
+    if x < -TOLERANCIA or y < -TOLERANCIA:
+        return
+    x, y = max(0.0, x), max(0.0, y)
     if not any(abs(x - anterior_x) <= TOLERANCIA and abs(y - anterior_y) <= TOLERANCIA
                for anterior_x, anterior_y in candidatos):
-        candidatos.append((max(0.0, x), max(0.0, y)))
+        candidatos.append((x, y))
 
 
 def _numero(valor: float) -> str:
@@ -61,6 +65,34 @@ def _numero(valor: float) -> str:
 
 def _ecuacion(a: float, b: float, relacion: str, limite: float) -> str:
     return f"{_numero(a)}x1 + {_numero(b)}x2 {relacion} {_numero(limite)}"
+
+
+def _mejora_sin_limite(problema: ProblemaLineal) -> bool:
+    """True si existe una direccion de la region factible que mejora Z sin limite."""
+    direcciones = [(1.0, 0.0), (0.0, 1.0)]
+    for restriccion in problema.restricciones:
+        a, b = restriccion.coeficientes
+        direcciones.extend([(b, -a), (-b, a)])
+    c1, c2 = problema.objetivo
+    signo = 1 if problema.tipo == "max" else -1
+    for dx, dy in direcciones:
+        if dx < -TOLERANCIA or dy < -TOLERANCIA or (abs(dx) <= TOLERANCIA and abs(dy) <= TOLERANCIA):
+            continue
+        if signo * (c1 * dx + c2 * dy) <= TOLERANCIA:
+            continue
+        en_cono = True
+        for restriccion in problema.restricciones:
+            a, b = restriccion.coeficientes
+            avance = a * dx + b * dy
+            if restriccion.relacion == "<=" and avance > TOLERANCIA:
+                en_cono = False
+            elif restriccion.relacion == ">=" and avance < -TOLERANCIA:
+                en_cono = False
+            elif restriccion.relacion == "=" and abs(avance) > TOLERANCIA:
+                en_cono = False
+        if en_cono:
+            return True
+    return False
 
 
 def resolver_grafico(problema: ProblemaLineal) -> ResultadoGrafico:
@@ -152,6 +184,19 @@ def resolver_grafico(problema: ProblemaLineal) -> ResultadoGrafico:
         )
 
     vertices.sort(key=lambda vertice: (vertice.x, vertice.y))
+    if _mejora_sin_limite(problema):
+        pasos.append(PasoGrafico(
+            titulo="5. Región no acotada",
+            detalle="La región factible es no acotada en una dirección que mejora la función objetivo: Z puede mejorar indefinidamente.",
+        ))
+        return ResultadoGrafico(
+            estado="no acotado",
+            valor_objetivo=None,
+            valores_variables=[],
+            vertices=vertices,
+            pasos=pasos,
+            mensaje="El problema es no acotado: la función objetivo mejora indefinidamente.",
+        )
     if problema.tipo == "min":
         optimo = min(vertices, key=lambda vertice: vertice.valor_objetivo)
     else:

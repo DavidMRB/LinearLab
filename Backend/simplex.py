@@ -109,9 +109,14 @@ def resolver_simplex(problema: ProblemaLineal) -> ResultadoSimplex:
             candidatos = np.where(reducidos > 1e-9)[0]
             if not len(candidatos):
                 return tabla, iteracion
-            columna = int(candidatos[0])
+            # Regla de Dantzig: entra la variable con mayor costo reducido (empate: menor indice).
+            # Pasadas 50 iteraciones se usa la regla de Bland para evitar ciclos.
+            if iteracion < 50:
+                columna = int(candidatos[int(np.argmax(reducidos[candidatos]))])
+            else:
+                columna = int(candidatos[0])
             razones = []
-            for fila in range(len(b)):
+            for fila in range(tabla.shape[0] - 1):
                 valor = tabla[fila, columna]
                 razones.append(tabla[fila, -1] / valor if valor > 1e-9 else math.inf)
             fila = int(np.argmin(razones))
@@ -133,7 +138,8 @@ def resolver_simplex(problema: ProblemaLineal) -> ResultadoSimplex:
             c_fase_1[artificiales] = -1
             tabla = _tabla_inicial(A, b, c_fase_1, base, nombres, "Fase I", 0)
             tabla, _ = ejecutar_fase(tabla, c_fase_1, "Fase I")
-            if tabla[-1, -1] < -1e-7:
+            # Al terminar la Fase I, tabla[-1, -1] = suma de las artificiales (>= 0).
+            if tabla[-1, -1] > 1e-7:
                 return ResultadoSimplex("inviable", None, [], pasos, "El problema no tiene una solucion factible.")
             for indice in artificiales:
                 if nombres[indice] in base:
@@ -146,6 +152,10 @@ def resolver_simplex(problema: ProblemaLineal) -> ResultadoSimplex:
                             if k != fila:
                                 tabla[k] -= tabla[k, reemplazo] * tabla[fila]
                         base[fila] = nombres[reemplazo]
+                    else:
+                        # Restriccion redundante: la fila queda en ceros y se elimina.
+                        tabla = np.delete(tabla, fila, axis=0)
+                        base.pop(fila)
             conservar = [j for j in range(len(nombres)) if j not in artificiales]
             tabla = np.column_stack((tabla[:, conservar], tabla[:, -1]))
             nombres = [nombres[j] for j in conservar]

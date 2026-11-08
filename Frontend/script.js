@@ -374,12 +374,20 @@ function formatNumber(value) {
   return Number(value).toFixed(4).replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
 }
 
+// Expresión lineal legible: "3x1 - 2x2 + 5x3" (sin "+ -").
+function formatLinear(coefficients, prefix = "x") {
+  return coefficients.map((value, index) => {
+    const term = `${formatNumber(Math.abs(value))}${prefix}${index + 1}`;
+    if (index === 0) return value < 0 ? `-${term}` : term;
+    return `${value < 0 ? "-" : "+"} ${term}`;
+  }).join(" ");
+}
+
 function formatModel(model) {
-  objectivePreview.textContent = `${model.tipo.toUpperCase()} Z = ${model.objetivo.map((value, index) => `${formatNumber(value)}x${index + 1}`).join(" + ")}`;
-  constraintsPreview.innerHTML = model.restricciones.map((restriction, index) => {
-    const left = restriction.coeficientes.map((value, variable) => `${formatNumber(value)}x${variable + 1}`).join(" + ");
-    return `<div class="constraint-result">R${index + 1}: ${left} ${restriction.relacion} ${formatNumber(restriction.termino_independiente)}</div>`;
-  }).join("");
+  objectivePreview.textContent = `${model.tipo.toUpperCase()} Z = ${formatLinear(model.objetivo)}`;
+  constraintsPreview.innerHTML = model.restricciones.map((restriction, index) =>
+    `<div class="constraint-result">R${index + 1}: ${formatLinear(restriction.coeficientes)} ${restriction.relacion} ${formatNumber(restriction.termino_independiente)}</div>`
+  ).join("");
 }
 
 function formatTransportModel(model) {
@@ -417,7 +425,8 @@ function renderTransportResult(result) {
 }
 
 function sectionLabel(text) {
-  return `<span class="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[#597081]">${text}</span>`;
+  // Sin "uppercase": las fórmulas distinguen mayúsculas (b vector vs. B matriz, y vs. Y).
+  return `<span class="mb-1 block text-[10px] font-semibold tracking-wide text-[#597081]">${text}</span>`;
 }
 
 function renderTablaCompleta(step) {
@@ -441,6 +450,7 @@ function renderSteps(result, title) {
       <strong class="block text-base">${title}</strong>
       <span class="mt-1 block text-xs text-[#597081]">${result.mensaje}</span>
       ${values ? `<span class="mt-1 block font-mono text-xs">${values}</span>` : ""}
+      ${result.pasos.length ? `<span class="mt-2 block text-[11px] leading-4 text-[#597081]">Lectura de la tabla: la última fila contiene los costos reducidos c<sub>j</sub> − z<sub>j</sub> (entra la variable con el mayor valor positivo) y su celda LD es −Z en maximización (+Z en minimización, donde se maximiza −Z).</span>` : ""}
     </div>
     ${result.pasos.map(step => `
       <div class="mb-3 rounded-xl border-l-4 border-steel bg-[#F6F9FA] p-4 text-sm leading-6">
@@ -602,8 +612,9 @@ function renderGraphicResult(result, model) {
     const [a, b] = restriction.coeficientes;
     const rhs = restriction.termino_independiente;
     if (Math.abs(a) <= 1e-8 && Math.abs(b) <= 1e-8) return "";
+    // Recta vertical (b = 0): x1 = rhs/a de abajo hacia arriba; en otro caso, de x1 = 0 a x1 = máximo.
     const start = Math.abs(b) > 1e-8 ? toSvg(0, rhs / b) : toSvg(rhs / a, 0);
-    const end = Math.abs(b) > 1e-8 ? toSvg(maxCoordinate, (rhs - a * maxCoordinate) / b) : start;
+    const end = Math.abs(b) > 1e-8 ? toSvg(maxCoordinate, (rhs - a * maxCoordinate) / b) : toSvg(rhs / a, maxCoordinate);
     return `<line x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}" stroke="#7EA0B7" stroke-width="2" stroke-dasharray="6 4"/><text x="${Math.max(padding.left, Math.min(width - 35, end.x - 4))}" y="${Math.max(padding.top + 12, Math.min(height - padding.bottom, end.y - 5))}" class="graph-label">R${index + 1}</text>`;
   }).join("");
   const pointMarks = points.map((point, index) => {
@@ -622,7 +633,8 @@ function renderGraphicResult(result, model) {
       <rect x="${padding.left}" y="${padding.top}" width="${plotWidth}" height="${plotHeight}" fill="#fff" rx="12"/>
       <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}" stroke="#36494E" stroke-width="1.5"/>
       <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${padding.left}" y2="${padding.top}" stroke="#36494E" stroke-width="1.5"/>
-      ${ticks}${lines}
+      <clipPath id="plotClip"><rect x="${padding.left}" y="${padding.top}" width="${plotWidth}" height="${plotHeight}"/></clipPath>
+      ${ticks}<g clip-path="url(#plotClip)">${lines}</g>
       ${points.length > 2 ? `<polygon points="${polygonPoints}" fill="#A9CEF4" fill-opacity=".45" stroke="#50856E" stroke-width="2"/>` : ""}
       ${pointMarks}
       <text x="${width - 13}" y="${height - padding.bottom + 2}" class="graph-label">x1</text>
@@ -643,7 +655,9 @@ function renderGraphicResult(result, model) {
     : `<article class="rounded-xl bg-[#F8EEEE] px-4 py-3 text-sm text-[#9A4E4E]">${result.mensaje}</article>`;
   stepsOutput.innerHTML = detailedSteps + verticesStep;
   finalAnswer.textContent = result.valor_objetivo === null ? result.estado : `Z = ${formatNumber(result.valor_objetivo)}`;
-  finalDescription.textContent = `${result.mensaje} x1 = ${formatNumber(result.valores_variables[0] ?? 0)}, x2 = ${formatNumber(result.valores_variables[1] ?? 0)}`;
+  finalDescription.textContent = result.estado === "optimo"
+    ? `${result.mensaje} x1 = ${formatNumber(result.valores_variables[0] ?? 0)}, x2 = ${formatNumber(result.valores_variables[1] ?? 0)}`
+    : result.mensaje;
 }
 
 function renderDualResult(result) {
@@ -655,7 +669,24 @@ function renderDualResult(result) {
   const dualValue = dual.valor_objetivo === null ? dual.estado : formatNumber(dual.valor_objetivo);
   finalAnswer.textContent = `Primal: ${primalValue} · Dual: ${dualValue}`;
   finalDescription.textContent = result.valores_coinciden ? "Los valores óptimos coinciden." : "Revisa la factibilidad o la formulación de ambos problemas.";
-  stepsOutput.innerHTML = renderSteps(primal, "Primal") + renderSteps(dual, "Dual construido");
+  stepsOutput.innerHTML = renderDualModel(result) + renderSteps(primal, "Primal") + renderSteps(dual, "Dual construido");
+}
+
+// Formulación del dual construido a partir del primal (con el signo de cada variable dual).
+function renderDualModel(result) {
+  const model = result.modelo_dual;
+  if (!model) return "";
+  const signLabel = { ">=0": "≥ 0", "<=0": "≤ 0", libre: "libre" };
+  const signs = (result.signos_dual || []).map((sign, index) => `y${index + 1} ${signLabel[sign] || sign}`).join(", ");
+  return `
+    <div class="mb-3 rounded-xl border border-ink/10 bg-white p-4 text-sm">
+      <strong class="block text-base">Modelo dual</strong>
+      <div class="mt-2 font-mono text-xs leading-6">
+        <div>${model.tipo.toUpperCase()} W = ${formatLinear(model.objetivo, "y")}</div>
+        ${model.restricciones.map((restriction, index) => `<div>D${index + 1}: ${formatLinear(restriction.coeficientes, "y")} ${restriction.relacion} ${formatNumber(restriction.termino_independiente)}</div>`).join("")}
+        ${signs ? `<div>${signs}</div>` : ""}
+      </div>
+    </div>`;
 }
 
 async function solve() {
@@ -678,7 +709,9 @@ async function solve() {
       if (response.status === 404 && selectedMethod === "simplexRevisado") {
         throw new Error("El backend desplegado aún no tiene disponible el método Simplex Revisado.");
       }
-      throw new Error(data.detail?.[0]?.msg || `La API rechazó el modelo (${response.status}).`);
+      // FastAPI devuelve `detail` como texto (errores de negocio) o como lista (validación de esquema).
+      const detail = typeof data.detail === "string" ? data.detail : data.detail?.[0]?.msg;
+      throw new Error(detail || `La API rechazó el modelo (${response.status}).`);
     }
     if (selectedMethod === "dualidad") renderDualResult(data);
     else if (selectedMethod === "grafico") renderGraphicResult(data, model);
@@ -689,6 +722,8 @@ async function solve() {
     await setResultsVisible(true);
   } catch (error) {
     formError.textContent = error.message || "No se pudo resolver el modelo.";
+    // Evita mostrar el resultado de un cálculo anterior junto al modelo que falló.
+    if (!solutionPanel.classList.contains("hidden")) await setResultsVisible(false);
   } finally {
     solveBtn.disabled = false;
     solveBtn.innerHTML = "Resolver <span>→</span>";

@@ -67,6 +67,8 @@ class DualidadSalida(BaseModel):
     primal: ResultadoSalida
     dual: ResultadoSalida
     modelo_dual: ProblemaEntrada
+    # Signo de cada variable dual: ">=0", "<=0" o "libre".
+    signos_dual: list[str] = []
     valores_coinciden: bool | None
 
 

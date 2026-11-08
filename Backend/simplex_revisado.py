@@ -71,7 +71,11 @@ def _resolver_fase(A, b, costos, base, nombres, fase, pasos, iteracion=0):
         # En el simplex revisado, la variable entrante debe ser la de mayor costo
         # reducido positivo para maximizar (o el de menor costo reducido negativo
         # para minimizar, con la convención de signos del problema).
-        entra_indice = max(candidatos, key=lambda indice: costos_reducidos[indice])
+        # Pasadas 50 iteraciones se usa la regla de Bland (menor indice) para evitar ciclos.
+        if iteracion < 50:
+            entra_indice = max(candidatos, key=lambda indice: (costos_reducidos[indice], -indice))
+        else:
+            entra_indice = min(candidatos)
         direccion = base_matrix @ A[:, entra_indice]
         razones = [
             x_basicas[fila] / direccion[fila]

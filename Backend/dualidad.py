@@ -57,12 +57,13 @@ def _dual_estandar(dual: ProblemaLineal):
 
 def _mapear_resultado(resultado: ResultadoSimplex, dual: ProblemaLineal, transformaciones, nombres_estandar):
     valores = []
-    for original in range(len(dual.objetivo)):
-        valores.append(sum(
-            resultado.valores_variables[posicion] * factor
-            for posicion, (indice, factor) in enumerate(transformaciones)
-            if indice == original
-        ))
+    if resultado.valores_variables:  # vacio si es inviable o no acotado
+        for original in range(len(dual.objetivo)):
+            valores.append(sum(
+                resultado.valores_variables[posicion] * factor
+                for posicion, (indice, factor) in enumerate(transformaciones)
+                if indice == original
+            ))
     equivalencias = {}
     for nombre, (original, _) in zip(nombres_estandar, transformaciones):
         equivalencias[nombre] = dual.nombres_variables[original]
