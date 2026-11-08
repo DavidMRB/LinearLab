@@ -1,4 +1,4 @@
-import { methodData } from "../modules/methods.js";
+import { methodData, iconImg } from "../modules/methods.js";
 
 const logo = `
   <button type="button" class="brand-home flex items-center gap-3 text-[17px] font-extrabold tracking-wide" aria-label="Volver al inicio y seleccionar un método">
@@ -8,23 +8,12 @@ const logo = `
     <span>LINEAR<span class="text-steel">LAB</span></span>
   </button>`;
 
-const methodStyles = {
-  simplex: "bg-ice text-ink",
-  dualidad: "bg-ink text-white",
-  simplexRevisado: "bg-steel text-white",
-  grafico: "bg-[#DCEFE7] text-[#50856E]",
-  transporte: "bg-[#F3E8D4] text-[#9A6E32]",
-  asignacion: "bg-[#E8DDF4] text-[#76539A]",
-  flujoMaximo: "bg-[#D9EEF0] text-[#357B83]",
-  flujoCostoMinimo: "bg-[#F4E1D5] text-[#A35D3B]"
-};
-
 const methods = Object.values(methodData);
 
 function methodCards() {
   return methods.map(({ id, icon, name, description }) => `
     <button class="method-card group flex min-h-[218px] flex-col items-start gap-4 rounded-3xl border border-ink/10 bg-white/75 p-5 text-left shadow-sm transition hover:-translate-y-1.5 hover:border-steel hover:shadow-2xl sm:p-6" data-method="${id}">
-      <div class="grid size-14 shrink-0 place-items-center rounded-2xl ${methodStyles[id]} text-2xl font-bold"><span>${icon}</span></div>
+      <div class="grid size-16 shrink-0 place-items-center overflow-hidden rounded-2xl">${iconImg(id)}</div>
       <div class="flex-1"><h2 class="mb-2 text-lg font-bold leading-tight">${name}</h2><p class="text-[13px] leading-5 text-[#597081]">${description}</p></div>
       <div class="self-end text-2xl text-steel transition group-hover:translate-x-1.5">→</div>
     </button>`).join("");
@@ -33,7 +22,7 @@ function methodCards() {
 function methodOptions() {
   return methods.map(({ id, icon, name, description }) => `
     <button class="workspace-option group relative flex min-h-[112px] min-w-0 flex-col items-center justify-start gap-2 rounded-2xl px-2 py-3 text-center transition hover:bg-mist" data-method="${id}" title="${description}">
-      <div class="grid size-12 shrink-0 place-items-center rounded-2xl ${methodStyles[id]} text-base font-extrabold transition group-hover:scale-105">${icon}</div>
+      <div class="grid size-12 shrink-0 place-items-center overflow-hidden rounded-2xl transition group-hover:scale-105">${iconImg(id)}</div>
       <strong class="line-clamp-2 text-[12px] leading-4">${name}</strong>
       <span class="option-check absolute right-2 top-2 text-xs font-bold text-steel opacity-0">✓</span>
     </button>`).join("");
@@ -57,7 +46,7 @@ export function renderLayout() {
         ${logo}
         <div class="ml-auto flex items-center gap-2 short:gap-1">
           <div class="relative">
-            <button id="currentMethod" class="flex items-center gap-2 rounded-2xl border border-ink/10 bg-white px-4 py-2.5 font-bold shadow-lg shadow-ink/5 short:px-3 short:py-2"><span id="currentMethodIcon" class="grid size-7 place-items-center rounded-lg bg-ice text-ink">Σ</span><span id="currentMethodText">Método</span><span class="text-steel">⌄</span></button>
+            <button id="currentMethod" class="flex items-center gap-2 rounded-2xl border border-ink/10 bg-white px-4 py-2.5 font-bold shadow-lg shadow-ink/5 short:px-3 short:py-2"><span id="currentMethodIcon" class="grid size-8 place-items-center overflow-hidden rounded-lg"></span><span id="currentMethodText">Método</span><span class="text-steel">⌄</span></button>
             <div id="methodMenu" class="pointer-events-none absolute right-0 top-[calc(100%+12px)] z-10 w-[min(30rem,calc(100vw-2rem))] -translate-y-2 scale-95 rounded-[28px] border border-ink/10 bg-white/95 p-4 opacity-0 shadow-2xl backdrop-blur transition [&.show]:pointer-events-auto [&.show]:translate-y-0 [&.show]:scale-100 [&.show]:opacity-100 sm:p-5">
               <div class="px-2 pb-4 pt-1 text-[11px] font-extrabold tracking-[1.5px] text-steel">MÉTODOS DISPONIBLES</div>
               <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">${methodOptions()}</div>

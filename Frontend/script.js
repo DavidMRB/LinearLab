@@ -1,5 +1,5 @@
 import { renderLayout } from "./components/layout.js";
-import { endpointFor, methodData } from "./modules/methods.js";
+import { endpointFor, methodData, iconImg } from "./modules/methods.js";
 
 renderLayout();
 
@@ -61,7 +61,7 @@ function selectMethod(method, firstView = false) {
   selectedMethod = method;
   const data = methodData[method];
   currentMethodText.textContent = "Método";
-  currentMethodIcon.textContent = data.icon;
+  currentMethodIcon.innerHTML = iconImg(method);
   calcTitle.textContent = data.name;
   solutionTitle.textContent = data.title;
   const esTransporte = method === "transporte";
