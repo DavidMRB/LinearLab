@@ -140,6 +140,7 @@ def resolver_dualidad_api(entrada: ProblemaEntrada):
         primal=convertir_resultado(resultado_primal, problema.nombres_variables),
         dual=convertir_resultado(resultado_dual, dual.nombres_variables),
         modelo_dual=convertir_entrada(dual),
+        signos_dual=dual.signos_variables or [],
         valores_coinciden=coinciden,
     )
 
@@ -175,7 +176,10 @@ def resolver_grafico_api(entrada: ProblemaEntrada):
 
 @app.post("/api/transporte/resolver", response_model=TransporteSalida)
 def resolver_transporte_api(entrada: TransporteEntrada):
-    resultado = resolver_transporte(entrada.costos, entrada.oferta, entrada.demanda)
+    try:
+        resultado = resolver_transporte(entrada.costos, entrada.oferta, entrada.demanda)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
     return TransporteSalida(
         oferta=resultado.oferta,
         demanda=resultado.demanda,
@@ -220,10 +224,13 @@ def resolver_asignacion_api(entrada: AsignacionEntrada):
 
 @app.post("/api/flujo-maximo/resolver", response_model=FlujoSalida)
 def resolver_flujo_maximo_api(entrada: FlujoEntrada):
-    resultado = resolver_flujo_maximo(
-        entrada.nodos, entrada.origen, entrada.destino,
-        [arista.model_dump() for arista in entrada.aristas],
-    )
+    try:
+        resultado = resolver_flujo_maximo(
+            entrada.nodos, entrada.origen, entrada.destino,
+            [arista.model_dump() for arista in entrada.aristas],
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
     return FlujoSalida(
         flujo=resultado.flujo, costo_total=resultado.costo_total, flujos=resultado.flujos,
         pasos=[{"titulo": paso.titulo, "detalle": paso.detalle, "estado": paso.estado} for paso in resultado.pasos],
@@ -235,10 +242,13 @@ def resolver_flujo_maximo_api(entrada: FlujoEntrada):
 def resolver_flujo_costo_minimo_api(entrada: FlujoEntrada):
     if entrada.flujo_requerido is None:
         raise HTTPException(status_code=422, detail="El flujo requerido es obligatorio para este método.")
-    resultado = resolver_flujo_costo_minimo(
-        entrada.nodos, entrada.origen, entrada.destino,
-        [arista.model_dump() for arista in entrada.aristas], entrada.flujo_requerido,
-    )
+    try:
+        resultado = resolver_flujo_costo_minimo(
+            entrada.nodos, entrada.origen, entrada.destino,
+            [arista.model_dump() for arista in entrada.aristas], entrada.flujo_requerido,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
     return FlujoSalida(
         flujo=resultado.flujo, costo_total=resultado.costo_total, flujos=resultado.flujos,
         pasos=[{"titulo": paso.titulo, "detalle": paso.detalle, "estado": paso.estado} for paso in resultado.pasos],
